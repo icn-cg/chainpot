@@ -1,0 +1,42 @@
+# Node / workspace
+node_modules/
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+*.log
+*.tsbuildinfo
+
+# System / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Vercel / build outputs
+.vercel/
+.next/
+out/
+dist/
+coverage/
+.turbo/
+.cache/
+
+# Env & secrets (root and packages)
+.env
+.env.*
+*.secret.*
+*.key
+
+# Hardhat (chain)
+chain/artifacts/
+chain/cache/
+chain/coverage/
+chain/deployments/
+chain/typechain-types/
+chain/.env
+
+# Next app (apps/web)
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel/
+apps/web/.env.local
+apps/web/.env*.local
