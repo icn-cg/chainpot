@@ -2,6 +2,9 @@
 import React, { useState } from "react";
 import ConnectBar from "../components/ConnectBar";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function Home() {
   const [addr, setAddr] = useState("");
   return (

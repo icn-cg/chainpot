@@ -4,6 +4,10 @@ import { useParams } from "next/navigation";
 import ConnectBar from "../../../components/ConnectBar";
 import PotView from "../../../components/PotView";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 export default function PotPage() {
   const { addr } = useParams<{ addr: string }>();
   return (

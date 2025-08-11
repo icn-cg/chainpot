@@ -1,6 +1,7 @@
 "use client";
 import { BrowserProvider, Contract, JsonRpcProvider } from "ethers";
 import { factoryAbi, escrowAbi, erc20Abi } from "./abi";
+import { toNumberSafe } from "./numeric";
 
 /** ---------- ENV ---------- */
 export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "80002");
@@ -56,7 +57,7 @@ export async function connectInjected(): Promise<BrowserProvider> {
 /** ---------- Chain guard for any EIP-1193 -> BrowserProvider ---------- */
 export async function ensureChain(provider: BrowserProvider) {
   const net = await provider.getNetwork();
-  if (Number(net.chainId) !== CHAIN_ID) {
+  if (toNumberSafe(net.chainId) !== CHAIN_ID) {
     const hexId = chainHex();
     try {
       await (provider as any).send("wallet_switchEthereumChain", [{ chainId: hexId }]);

@@ -10,6 +10,8 @@ import {
   FACTORY,
 } from "../lib/web3";
 import { erc20Abi, escrowAbi } from "../lib/abi";
+import { formatFixed18, toNumberSafe } from "../lib/numeric";
+
 
 function fromUnits18(n: bigint): string {
   const sign = n < 0n ? "-" : "";
@@ -200,7 +202,7 @@ export default function PotView({ address }: { address: string }) {
       // update cache
       if (typeof window !== "undefined") {
         sessionStorage.setItem(key, JSON.stringify({
-          last: Number(latest),
+          last: toNumberSafe(latest),
           entries: list.map(m => [m.address, m.amount.toString()]),
         }));
       }
@@ -313,12 +315,12 @@ export default function PotView({ address }: { address: string }) {
 
   // ---------- derived ----------
   const endDate = useMemo(
-    () => new Date(Number(endTs) * 1000).toLocaleString(),
+    () => new Date(toNumberSafe(endTs) * 1000).toLocaleString(),
     [endTs]
   );
   const secondsLeft = useMemo(() => {
     const nowSec = Math.floor(nowMs / 1000);
-    return Number(endTs) - nowSec;
+    return toNumberSafe(endTs) - nowSec;
   }, [endTs, nowMs]);
   const eligible = secondsLeft <= 0;
   const noGas = me && nativeBal === 0n;
@@ -334,7 +336,7 @@ export default function PotView({ address }: { address: string }) {
             Connected: <span className="font-mono">{me.slice(0, 6)}…{me.slice(-4)}</span> on Polygon Amoy
           </div>
           <div className="text-sm">
-            Gas: <b>{fromUnits18(nativeBal)}</b> MATIC
+            Gas: <b>{formatFixed18(nativeBal)}</b> MATIC
           </div>
           <div className="text-sm">
             MockUSDC: <b>{fromUnits6(tokenBal)}</b> (balance) • Allowance to pot: <b>{fromUnits6(allowance)}</b>

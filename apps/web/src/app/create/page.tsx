@@ -5,6 +5,10 @@ import { BrowserProvider, Contract, type ContractTransactionReceipt, type Log } 
 import { USDC, factoryWrite, signerAddress, toUnixTs, toUnits6 } from "../../lib/web3";
 import { factoryAbi } from "../../lib/abi";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 export default function CreatePotPage() {
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [entry, setEntry] = useState("50");

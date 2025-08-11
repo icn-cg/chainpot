@@ -9,6 +9,7 @@ import {
   erc20Write,
   toUnits6,
 } from "../lib/web3";
+import { toNumberSafe } from "src/lib/numeric";
 
 type Winner = { address: string; bps: number };
 
@@ -70,7 +71,7 @@ export default function AdminPanel({ address }: { address: string }) {
   }, []);
   const secondsLeft = useMemo(() => {
     const nowSec = Math.floor(nowMs / 1000);
-    return Number(endTs) - nowSec;
+    return toNumberSafe(endTs) - nowSec;
   }, [endTs, nowMs]);
   const eligible = secondsLeft <= 0;
 
@@ -83,7 +84,7 @@ export default function AdminPanel({ address }: { address: string }) {
 
       const e = await escR.leagueEndTime();
       setEndTs(e);
-      setEnd(new Date(Number(e) * 1000).toISOString().slice(0, 16));
+      setEnd(new Date(toNumberSafe(e) * 1000).toISOString().slice(0, 16));
       setFee(fromUnits6(await escR.entryFee()));
 
       if (provider) {
@@ -124,7 +125,7 @@ export default function AdminPanel({ address }: { address: string }) {
   }
   async function doSetWinners() {
     if (!provider) return alert("Connect");
-    const sum = winners.reduce((a, w) => a + Number(w.bps || 0), 0);
+    const sum = winners.reduce((a, w) => a + toNumberSafe(w.bps || 0), 0);
     if (sum !== 10000) return alert("Bps must sum to 10000.");
     const esc = await escrowWrite(address, provider);
     const addrs = winners.map((w) => w.address);
@@ -183,7 +184,7 @@ export default function AdminPanel({ address }: { address: string }) {
         <div><b>Owner</b>: {owner}</div>
         <div>Params frozen: {String(frozen)} (freeze occurs on first join)</div>
         <div className="flex gap-2 items-center">
-          <span>Ends: {new Date(Number(endTs) * 1000).toLocaleString()}</span>
+          <span>Ends: {new Date(toNumberSafe(endTs) * 1000).toLocaleString()}</span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full border ${
               eligible

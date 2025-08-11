@@ -3,6 +3,9 @@ import { useParams } from "next/navigation";
 import ConnectBar from "../../../../components/ConnectBar";
 import AdminPanel from "../../../../components/AdminPanel";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function AdminPage() {
   const { addr } = useParams<{ addr: string }>();
   return (
