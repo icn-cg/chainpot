@@ -1,24 +1,16 @@
-"use client";
-import React, { useEffect, useMemo, useState } from "react";
-import { BrowserProvider, Interface, id, zeroPadValue, getAddress } from "ethers";
-import { useWallet } from "./WalletProvider";
-import {
-  erc20Readonly,
-  escrowReadonly,
-  escrowWrite,
-  fromUnits6,
-  rpc,
-  FACTORY,
-} from "../lib/web3";
-import { erc20Abi, escrowAbi } from "../lib/abi";
-import { formatFixed18, toNumberSafe, secondsToMilliseconds } from "../lib/numeric";
-
+'use client';
+import React, { useEffect, useMemo, useState } from 'react';
+import { BrowserProvider, Interface, id, zeroPadValue, getAddress } from 'ethers';
+import { useWallet } from './WalletProvider';
+import { erc20Readonly, escrowReadonly, escrowWrite, fromUnits6, rpc, FACTORY } from '../lib/web3';
+import { erc20Abi, escrowAbi } from '../lib/abi';
+import { formatFixed18, toNumberSafe, secondsToMilliseconds } from '../lib/numeric';
 
 function fromUnits18(n: bigint): string {
-  const sign = n < 0n ? "-" : "";
+  const sign = n < 0n ? '-' : '';
   const x = n < 0n ? -n : n;
   const i = x / 1_000_000_000_000_000_000n;
-  const d = (x % 1_000_000_000_000_000_000n).toString().padStart(18, "0");
+  const d = (x % 1_000_000_000_000_000_000n).toString().padStart(18, '0');
   return `${sign}${i}.${d}`;
 }
 
@@ -27,16 +19,23 @@ const fmtCountdown = (secs: number) => {
   const neg = secs < 0;
   let s = Math.abs(Math.floor(secs));
   const U = [
-    { k: "w", v: 7 * 24 * 3600 },
-    { k: "d", v: 24 * 3600 },
-    { k: "h", v: 3600 },
-    { k: "m", v: 60 },
-    { k: "s", v: 1 },
+    { k: 'w', v: 7 * 24 * 3600 },
+    { k: 'd', v: 24 * 3600 },
+    { k: 'h', v: 3600 },
+    { k: 'm', v: 60 },
+    { k: 's', v: 1 },
   ];
-  const vals = U.map(u => { const q = Math.floor(s / u.v); s -= q * u.v; return q; });
-  let first = vals.findIndex(n => n > 0);
+  const vals = U.map((u) => {
+    const q = Math.floor(s / u.v);
+    s -= q * u.v;
+    return q;
+  });
+  let first = vals.findIndex((n) => n > 0);
   if (first === -1) first = U.length - 1;
-  const parts = vals.slice(first).map((n, i) => `${n}${U[first + i].k}`).join(" ");
+  const parts = vals
+    .slice(first)
+    .map((n, i) => `${n}${U[first + i].k}`)
+    .join(' ');
   return neg ? `-${parts}` : parts;
 };
 
@@ -44,13 +43,13 @@ type Member = { address: string; amount: bigint };
 
 export default function PotView({ address }: { address: string }) {
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
-  const [me, setMe] = useState<string>("");
+  const [me, setMe] = useState<string>('');
   const wallet = useWallet();
 
   // Bridge WalletConnect/AppKit provider → ethers BrowserProvider and capture address
   useEffect(() => {
     setProvider(wallet.provider);
-    setMe(wallet.address || "");
+    setMe(wallet.address || '');
   }, [wallet.provider, wallet.address]);
 
   const [fee, setFee] = useState<bigint>(0n);
@@ -60,7 +59,7 @@ export default function PotView({ address }: { address: string }) {
 
   // balances banner
   const [nativeBal, setNativeBal] = useState<bigint>(0n); // wei (MATIC)
-  const [tokenBal, setTokenBal]   = useState<bigint>(0n); // 6-dec (MockUSDC)
+  const [tokenBal, setTokenBal] = useState<bigint>(0n); // 6-dec (MockUSDC)
 
   // participants
   const [members, setMembers] = useState<Member[]>([]);
@@ -95,10 +94,7 @@ export default function PotView({ address }: { address: string }) {
       // token + allowance
       const tokAddr = await esc.token();
       const tok = erc20Readonly(tokAddr);
-      const [alw, bal] = await Promise.all([
-        tok.allowance(meAddr, address),
-        tok.balanceOf(meAddr),
-      ]);
+      const [alw, bal] = await Promise.all([tok.allowance(meAddr, address), tok.balanceOf(meAddr)]);
       setAllowance(alw);
       setTokenBal(bal);
 
@@ -106,11 +102,14 @@ export default function PotView({ address }: { address: string }) {
       try {
         setNativeBal(await rpc().getBalance(meAddr));
       } catch {
-        try { setNativeBal(await provider.getBalance(meAddr)); }
-        catch { setNativeBal(0n); }
+        try {
+          setNativeBal(await provider.getBalance(meAddr));
+        } catch {
+          setNativeBal(0n);
+        }
       }
     } else {
-      setMe("");
+      setMe('');
     }
   }
 
@@ -118,20 +117,20 @@ export default function PotView({ address }: { address: string }) {
   async function findCreationBlock(): Promise<bigint | null> {
     try {
       const prov = rpc();
-      const topicCreated = id("LeagueCreated(address,address)");
+      const topicCreated = id('LeagueCreated(address,address)');
       const leagueTopic = zeroPadValue(getAddress(address), 32);
       const logs = await prov.getLogs({
         address: FACTORY,
         topics: [topicCreated, null, leagueTopic],
         fromBlock: 0n,
-        toBlock: "latest",
+        toBlock: 'latest',
       });
       if (logs.length) {
         const bn = (logs[0] as any).blockNumber as number;
         return BigInt(bn);
       }
     } catch (e) {
-      console.warn("findCreationBlock failed", e);
+      console.warn('findCreationBlock failed', e);
     }
     return null;
   }
@@ -142,7 +141,7 @@ export default function PotView({ address }: { address: string }) {
     try {
       const prov = rpc();
       const iface = new Interface(escrowAbi);
-      const topicJoined = id("Joined(address,uint256)"); // exact signature
+      const topicJoined = id('Joined(address,uint256)'); // exact signature
 
       // tiny cache key per escrow
       const key = `members:${address.toLowerCase()}`;
@@ -150,14 +149,16 @@ export default function PotView({ address }: { address: string }) {
       let fromBlock: bigint | null = null;
 
       // use cache if present (unless force)
-      if (!force && typeof window !== "undefined") {
+      if (!force && typeof window !== 'undefined') {
         const cached = sessionStorage.getItem(key);
         if (cached) {
           const c = JSON.parse(cached) as { last: number; entries: [string, string][] };
           byAddr = new Map(c.entries.map(([a, n]) => [a, BigInt(n)]));
           fromBlock = BigInt(c.last + 1);
           // show immediately while we fetch new logs
-          setMembers(Array.from(byAddr.entries()).map(([address, amount]) => ({ address, amount })));
+          setMembers(
+            Array.from(byAddr.entries()).map(([address, amount]) => ({ address, amount }))
+          );
         }
       }
 
@@ -171,7 +172,7 @@ export default function PotView({ address }: { address: string }) {
           fromBlock = latest0 > 200_000n ? latest0 - 200_000n : 0n;
         }
       }
-      
+
       const latest = BigInt(await prov.getBlockNumber());
       if (fromBlock > latest) {
         setLoadingMembers(false);
@@ -210,21 +211,21 @@ export default function PotView({ address }: { address: string }) {
       setMembers(list);
 
       // update cache
-      if (typeof window !== "undefined") {
+      if (typeof window !== 'undefined') {
         // Dev diagnostic: ensure no BigInt is serialized by accident
         const cacheObj = {
           last: toNumberSafe(latest),
-          entries: list.map(m => [m.address, m.amount.toString()]),
+          entries: list.map((m) => [m.address, m.amount.toString()]),
         } as const;
         // eslint-disable-next-line no-console
-        console.log("[PotView] cache types", {
+        console.log('[PotView] cache types', {
           last: typeof cacheObj.last,
           entry0: list[0] ? typeof list[0].amount : undefined,
         });
         sessionStorage.setItem(key, JSON.stringify(cacheObj));
       }
     } catch (e) {
-      console.warn("loadMembersFast failed", e);
+      console.warn('loadMembersFast failed', e);
     } finally {
       setLoadingMembers(false);
     }
@@ -232,13 +233,15 @@ export default function PotView({ address }: { address: string }) {
 
   // First load: run refresh() and loadMembersFast() in parallel
   useEffect(() => {
-    (async () => { await Promise.allSettled([refresh(), loadMembersFast()]); })();
+    (async () => {
+      await Promise.allSettled([refresh(), loadMembersFast()]);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, provider]);
 
   // ---------- Approve (robust) ----------
   async function approve() {
-    if (!provider) return alert("Connect a wallet first");
+    if (!provider) return alert('Connect a wallet first');
     try {
       const signer = await provider.getSigner();
       const from = await signer.getAddress();
@@ -287,21 +290,21 @@ export default function PotView({ address }: { address: string }) {
 
       // Many USDCs require approve(0) before changing a non-zero allowance
       if (current > 0n) {
-        await sendRaw(iface20.encodeFunctionData("approve", [address, 0n]));
+        await sendRaw(iface20.encodeFunctionData('approve', [address, 0n]));
       }
 
-      await sendRaw(iface20.encodeFunctionData("approve", [address, fee]));
+      await sendRaw(iface20.encodeFunctionData('approve', [address, fee]));
 
       await refresh();
-      alert("Approved.");
+      alert('Approved.');
     } catch (e: any) {
-      alert(e?.reason || e?.data?.message || e?.message || "Approve failed");
+      alert(e?.reason || e?.data?.message || e?.message || 'Approve failed');
     }
   }
 
   // ---------- Join (simulate + raw send) ----------
   async function join() {
-    if (!provider) return alert("Connect a wallet first");
+    if (!provider) return alert('Connect a wallet first');
     try {
       const escW = await escrowWrite(address, provider);
       const signer = await provider.getSigner();
@@ -311,7 +314,7 @@ export default function PotView({ address }: { address: string }) {
       await (escW as any).joinLeague.staticCall();
 
       // calldata + estimate
-      const data = (escW as any).interface.encodeFunctionData("joinLeague", []);
+      const data = (escW as any).interface.encodeFunctionData('joinLeague', []);
       let gasLimit = 200_000n;
       try {
         const est = await provider.estimateGas({ from, to: address, data });
@@ -322,20 +325,17 @@ export default function PotView({ address }: { address: string }) {
       await tx.wait();
 
       await Promise.allSettled([refresh(), loadMembersFast(true)]);
-      alert("Joined!");
+      alert('Joined!');
     } catch (e: any) {
       // Map common revert to friendlier msg
-      const msg = String(e?.reason || e?.data?.message || e?.message || "Join failed");
-      alert(msg.includes("already") ? "Already joined this pot." : msg);
+      const msg = String(e?.reason || e?.data?.message || e?.message || 'Join failed');
+      alert(msg.includes('already') ? 'Already joined this pot.' : msg);
     }
   }
 
   // ---------- derived ----------
 
-  const endDate = useMemo(
-    () => new Date(secondsToMilliseconds(endTs)).toLocaleString(),
-    [endTs]
-  );
+  const endDate = useMemo(() => new Date(secondsToMilliseconds(endTs)).toLocaleString(), [endTs]);
   const secondsLeft = useMemo(() => {
     // Convert once through helper, then do pure number math
     const endMs = secondsToMilliseconds(endTs);
@@ -350,13 +350,18 @@ export default function PotView({ address }: { address: string }) {
       {me && (
         <div className="flex flex-col gap-1 rounded-lg border border-gray-200 p-3">
           <div className="text-sm text-gray-600">
-            Connected: <span className="font-mono">{me.slice(0, 6)}…{me.slice(-4)}</span> on Polygon Amoy
+            Connected:{' '}
+            <span className="font-mono">
+              {me.slice(0, 6)}…{me.slice(-4)}
+            </span>{' '}
+            on Polygon Amoy
           </div>
           <div className="text-sm">
             Gas: <b>{formatFixed18(nativeBal)}</b> MATIC
           </div>
           <div className="text-sm">
-            MockUSDC: <b>{fromUnits6(tokenBal)}</b> (balance) • Allowance to pot: <b>{fromUnits6(allowance)}</b>
+            MockUSDC: <b>{fromUnits6(tokenBal)}</b> (balance) • Allowance to pot:{' '}
+            <b>{fromUnits6(allowance)}</b>
           </div>
           {noGas && (
             <div className="text-sm mt-1 rounded border border-amber-300 bg-amber-50 px-2 py-1">
@@ -368,18 +373,20 @@ export default function PotView({ address }: { address: string }) {
 
       {/* pot card (Escrow, Entry Fee, Pot Balance, Participants) */}
       <div className="border border-gray-200 p-3 rounded-xl space-y-2">
-        <div><b>Escrow</b>: {address}</div>
+        <div>
+          <b>Escrow</b>: {address}
+        </div>
         <div>Entry Fee: {fromUnits6(fee)} USDC</div>
         <div className="flex gap-2 items-center">
           <span>Ends: {endDate}</span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full border ${
               eligible
-                ? "border-green-300 bg-green-50 text-green-700"
-                : "border-gray-300 bg-gray-50 text-gray-700"
+                ? 'border-green-300 bg-green-50 text-green-700'
+                : 'border-gray-300 bg-gray-50 text-gray-700'
             }`}
           >
-            {eligible ? "payout eligible" : `ends in ${fmtCountdown(secondsLeft)}`}
+            {eligible ? 'payout eligible' : `ends in ${fmtCountdown(secondsLeft)}`}
           </span>
         </div>
         <div>Pot Balance: {fromUnits6(balance)} USDC</div>
@@ -398,7 +405,9 @@ export default function PotView({ address }: { address: string }) {
             <ul className="text-sm space-y-1">
               {members.map((m) => (
                 <li key={m.address} className="flex items-center justify-between font-mono">
-                  <span>{m.address.slice(0,6)}…{m.address.slice(-4)}</span>
+                  <span>
+                    {m.address.slice(0, 6)}…{m.address.slice(-4)}
+                  </span>
                   <span className="tabular-nums">{fromUnits6(m.amount)} USDC</span>
                 </li>
               ))}
@@ -409,4 +418,3 @@ export default function PotView({ address }: { address: string }) {
     </div>
   );
 }
-

@@ -7,8 +7,8 @@ export function toNumberSafe(
   value: bigint | number | string | null | undefined,
   fallback = 0
 ): number {
-  if (typeof value === "bigint" || typeof value === "number") return Number(value);
-  if (typeof value === "string") {
+  if (typeof value === 'bigint' || typeof value === 'number') return Number(value);
+  if (typeof value === 'string') {
     const n = Number(value);
     return isNaN(n) ? fallback : n;
   }
@@ -27,9 +27,9 @@ export function compareBigints(a: bigint, b: bigint): -1 | 0 | 1 {
 
 /** Format a 18-decimals bigint (e.g., ETH/MATIC wei) into a human string. */
 export function formatFixed18(value: bigint): string {
-  const sign = value < 0n ? "-" : "";
+  const sign = value < 0n ? '-' : '';
   const x = value < 0n ? -value : value;
   const i = x / 1_000_000_000_000_000_000n;
-  const d = (x % 1_000_000_000_000_000_000n).toString().padStart(18, "0");
+  const d = (x % 1_000_000_000_000_000_000n).toString().padStart(18, '0');
   return `${sign}${i}.${d}`;
 }

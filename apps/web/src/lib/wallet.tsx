@@ -1,7 +1,7 @@
-"use client";
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { BrowserProvider } from "ethers";
-import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
+'use client';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { BrowserProvider } from 'ethers';
+import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react';
 
 type Ctx = {
   provider: BrowserProvider | null;
@@ -31,9 +31,9 @@ export type WalletState = {
 };
 
 // Read: merge context (injected/AppKit pushed by ConnectBar) with AppKit fallback
-export function useWallet(): WalletState {
+export function useÍWallet(): WalletState {
   const ctx = useContext(WalletCtx);
-  const { walletProvider } = useAppKitProvider("eip155");
+  const { walletProvider } = useAppKitProvider('eip155');
   const { address, isConnected } = useAppKitAccount();
 
   const appKitProvider = useMemo(() => {

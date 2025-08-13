@@ -1,8 +1,8 @@
-"use client";
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { BrowserProvider } from "ethers";
-import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
-import { WalletState, WalletContextType } from "../lib/wallet";
+'use client';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { BrowserProvider } from 'ethers';
+import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react';
+import { WalletState, WalletContextType } from '../lib/wallet';
 
 // Inline the provider creation to avoid export issues
 function createBrowserProvider(walletProvider: any): BrowserProvider | null {
@@ -14,10 +14,10 @@ function createBrowserProvider(walletProvider: any): BrowserProvider | null {
   }
 }
 
-const WalletCtx = createContext<WalletContextType>({ 
-  provider: null, 
-  address: null, 
-  setWallet: () => {} 
+const WalletCtx = createContext<WalletContextType>({
+  provider: null,
+  address: null,
+  setWallet: () => {},
 });
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
@@ -36,11 +36,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 // Read: merge context (injected/AppKit pushed by ConnectBar) with AppKit fallback
 export function useWallet(): WalletState {
   const ctx = useContext(WalletCtx);
-  const { walletProvider } = useAppKitProvider("eip155");
+  const { walletProvider } = useAppKitProvider('eip155');
   const { address, isConnected } = useAppKitAccount();
 
-  const appKitProvider = useMemo(() => 
-    createBrowserProvider(walletProvider && isConnected ? walletProvider : null), 
+  const appKitProvider = useMemo(
+    () => createBrowserProvider(walletProvider && isConnected ? walletProvider : null),
     [walletProvider, isConnected]
   );
 

@@ -1,5 +1,5 @@
 // Types and pure wallet utilities (no JSX)
-import { BrowserProvider } from "ethers";
+import { BrowserProvider } from 'ethers';
 
 export type WalletState = {
   isConnected: boolean;

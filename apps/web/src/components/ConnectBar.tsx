@@ -1,24 +1,24 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { BrowserProvider } from "ethers";
-import { connectInjected, signerAddress, ensureChain } from "../lib/web3";
-import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
-import { openAppKit } from "../lib/appkit";
-import { useSetWallet } from "../components/WalletProvider";
+'use client';
+import React, { useEffect, useState } from 'react';
+import { BrowserProvider } from 'ethers';
+import { connectInjected, signerAddress, ensureChain } from '../lib/web3';
+import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react';
+import { openAppKit } from '../lib/appkit';
+import { useSetWallet } from '../components/WalletProvider';
 
 type Props = { onProvider?(p: BrowserProvider | null): void };
 
 export default function ConnectBar({ onProvider }: Props) {
-  const [addr, setAddr] = useState("");
-  const [error, setError] = useState("");
+  const [addr, setAddr] = useState('');
+  const [error, setError] = useState('');
   const [hasInjected, setHasInjected] = useState(false);
   const setWallet = useSetWallet();
 
-  const { walletProvider } = useAppKitProvider("eip155");
+  const { walletProvider } = useAppKitProvider('eip155');
   const { address: wcAddress, isConnected } = useAppKitAccount();
 
   useEffect(() => {
-    setHasInjected(typeof window !== "undefined" && !!(window as any).ethereum);
+    setHasInjected(typeof window !== 'undefined' && !!(window as any).ethereum);
   }, []);
 
   useEffect(() => {
@@ -29,28 +29,32 @@ export default function ConnectBar({ onProvider }: Props) {
         return;
       }
       const p = new BrowserProvider(walletProvider as any);
-      try { await ensureChain(p); } catch {}
-      (walletProvider as any)?.on?.("chainChanged", () => window.location.reload());
-  onProvider?.(p);
-  setWallet(p, wcAddress || null);
+      try {
+        await ensureChain(p);
+      } catch {}
+      (walletProvider as any)?.on?.('chainChanged', () => window.location.reload());
+      onProvider?.(p);
+      setWallet(p, wcAddress || null);
 
       if (wcAddress) setAddr(wcAddress);
       else {
-        try { setAddr(await signerAddress(p)); } catch {}
+        try {
+          setAddr(await signerAddress(p));
+        } catch {}
       }
     })();
   }, [walletProvider, isConnected, wcAddress, onProvider]);
 
   async function doConnectInjected() {
     try {
-      setError("");
+      setError('');
       if (!hasInjected) {
-        setError("No injected wallet found. Install/enable MetaMask (or Coinbase Wallet).");
+        setError('No injected wallet found. Install/enable MetaMask (or Coinbase Wallet).');
         return;
       }
       const p = await connectInjected();
-  onProvider?.(p);
-  setWallet(p, await signerAddress(p));
+      onProvider?.(p);
+      setWallet(p, await signerAddress(p));
       setAddr(await signerAddress(p));
     } catch (e: any) {
       setError(e?.message || String(e));
@@ -58,7 +62,7 @@ export default function ConnectBar({ onProvider }: Props) {
   }
 
   function doConnectWC() {
-    setError("");
+    setError('');
     openAppKit(); // opens the Reown/AppKit modal (WC v2)
   }
 
@@ -71,7 +75,10 @@ export default function ConnectBar({ onProvider }: Props) {
           </div>
         ) : (
           <>
-            <button className="px-3 py-2 rounded border border-gray-300" onClick={doConnectInjected}>
+            <button
+              className="px-3 py-2 rounded border border-gray-300"
+              onClick={doConnectInjected}
+            >
               Connect Wallet
             </button>
             <button className="px-3 py-2 rounded border border-gray-300" onClick={doConnectWC}>
@@ -81,9 +88,7 @@ export default function ConnectBar({ onProvider }: Props) {
         )}
       </div>
       {!!error && (
-        <div className="text-sm px-3 py-2 rounded border border-amber-300 bg-amber-50">
-          {error}
-        </div>
+        <div className="text-sm px-3 py-2 rounded border border-amber-300 bg-amber-50">{error}</div>
       )}
     </div>
   );
