@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { BrowserProvider } from "ethers";
 import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
-import { useWallet } from "../lib/wallet";
+import { useWallet } from "./WalletProvider";
 import {
   escrowReadonly,
   escrowWrite,

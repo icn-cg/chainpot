@@ -4,11 +4,11 @@ import AdminPanel from "../../../../components/AdminPanel";
 
 
 import ConnectionBanner from "../../../../components/ConnectionBanner";
-import { useAppKitAccount } from "@reown/appkit/react";
+import { useWallet } from "../../../../components/WalletProvider";
 
 export default function AdminPage() {
   const { addr } = useParams<{ addr: string }>();
-  const { isConnected } = useAppKitAccount();
+  const { isConnected } = useWallet();
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

@@ -1,8 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { BrowserProvider, Interface, id, zeroPadValue, getAddress } from "ethers";
-import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
-import { useWallet } from "../lib/wallet";
+import { useWallet } from "./WalletProvider";
 import {
   erc20Readonly,
   escrowReadonly,
@@ -44,17 +43,6 @@ const fmtCountdown = (secs: number) => {
 type Member = { address: string; amount: bigint };
 
 export default function PotView({ address }: { address: string }) {
-  const { walletProvider } = useAppKitProvider("eip155");
-  const { address: wcAddress, isConnected } = useAppKitAccount();
-      {/* action buttons */}
-      <div className="flex gap-2">
-        <button className="px-3 py-2 rounded border border-gray-300" onClick={approve}>
-          Approve USDC
-        </button>
-        <button className="px-3 py-2 rounded border border-gray-300" onClick={join}>
-          Join
-        </button>
-      </div>
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [me, setMe] = useState<string>("");
   const wallet = useWallet();
@@ -343,13 +331,6 @@ export default function PotView({ address }: { address: string }) {
   }
 
   // ---------- derived ----------
-  // Tiny diagnostics to help catch BigInt mixing during build-time SSR
-  // Safe to keep; remove once the build error is resolved.
-  // eslint-disable-next-line no-console
-  console.log("[PotView] derive types", {
-    endTs: typeof endTs,
-    nowMs: typeof nowMs,
-  });
 
   const endDate = useMemo(
     () => new Date(secondsToMilliseconds(endTs)).toLocaleString(),

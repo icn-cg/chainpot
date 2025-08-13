@@ -6,11 +6,11 @@ import Link from "next/link";
 
 
 import ConnectionBanner from "../../../components/ConnectionBanner";
-import { useAppKitAccount } from "@reown/appkit/react";
+import { useWallet } from "../../../components/WalletProvider";
 
 export default function PotPage() {
   const { addr } = useParams<{ addr: string }>();
-  const { isConnected } = useAppKitAccount();
+  const { isConnected } = useWallet();
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

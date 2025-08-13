@@ -4,6 +4,7 @@ import { BrowserProvider } from "ethers";
 import { connectInjected, signerAddress, ensureChain } from "../lib/web3";
 import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
 import { openAppKit } from "../lib/appkit";
+import { useSetWallet } from "../components/WalletProvider";
 
 type Props = { onProvider?(p: BrowserProvider | null): void };
 
@@ -11,6 +12,7 @@ export default function ConnectBar({ onProvider }: Props) {
   const [addr, setAddr] = useState("");
   const [error, setError] = useState("");
   const [hasInjected, setHasInjected] = useState(false);
+  const setWallet = useSetWallet();
 
   const { walletProvider } = useAppKitProvider("eip155");
   const { address: wcAddress, isConnected } = useAppKitAccount();
@@ -23,12 +25,14 @@ export default function ConnectBar({ onProvider }: Props) {
     (async () => {
       if (!walletProvider || !isConnected) {
         onProvider?.(null);
+        setWallet(null, null);
         return;
       }
       const p = new BrowserProvider(walletProvider as any);
       try { await ensureChain(p); } catch {}
       (walletProvider as any)?.on?.("chainChanged", () => window.location.reload());
-      onProvider?.(p);
+  onProvider?.(p);
+  setWallet(p, wcAddress || null);
 
       if (wcAddress) setAddr(wcAddress);
       else {
@@ -45,7 +49,8 @@ export default function ConnectBar({ onProvider }: Props) {
         return;
       }
       const p = await connectInjected();
-      onProvider?.(p);
+  onProvider?.(p);
+  setWallet(p, await signerAddress(p));
       setAddr(await signerAddress(p));
     } catch (e: any) {
       setError(e?.message || String(e));
