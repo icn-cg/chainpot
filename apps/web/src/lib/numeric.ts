@@ -4,11 +4,14 @@
  * Convert a bigint/number/nullable into a JS number for UI math (never for on-chain math).
  */
 export function toNumberSafe(
-  value: bigint | number | null | undefined,
+  value: bigint | number | string | null | undefined,
   fallback = 0
 ): number {
-  if (typeof value === "bigint") return Number(value);
-  if (typeof value === "number") return value;
+  if (typeof value === "bigint" || typeof value === "number") return Number(value);
+  if (typeof value === "string") {
+    const n = Number(value);
+    return isNaN(n) ? fallback : n;
+  }
   return fallback;
 }
 

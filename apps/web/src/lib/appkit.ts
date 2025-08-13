@@ -9,7 +9,7 @@ const projectId =
   "";
 
 const metadata = {
-  name: "ChainPots",
+  name: "ChainPool",
   description: "Private FPL pots",
   url: process.env.NEXT_PUBLIC_DAPP_URL || "http://localhost:3000",
   icons: ["https://walletconnect.com/walletconnect-logo.png"],

@@ -1,12 +1,10 @@
+
 "use client";
 import React, { useState } from "react";
-import ConnectBar from "../../components/ConnectBar";
 import { BrowserProvider, Contract, type ContractTransactionReceipt, type Log } from "ethers";
 import { USDC, factoryWrite, signerAddress, toUnixTs, toUnits6 } from "../../lib/web3";
 import { factoryAbi } from "../../lib/abi";
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+import Link from "next/link";
 
 
 export default function CreatePotPage() {
@@ -55,7 +53,6 @@ export default function CreatePotPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Create Pot</h1>
-        <ConnectBar onProvider={setProvider} />
       </div>
 
       <div className="border border-gray-200 p-3 rounded-xl space-y-3">
@@ -93,9 +90,9 @@ export default function CreatePotPage() {
         {potAddr && (
           <div>
             New Pot:{" "}
-            <a className="underline" href={`/pot/${potAddr}`}>
+            <Link className="underline" href={`/pot/${potAddr}`}>
               {potAddr}
-            </a>
+            </Link>
           </div>
         )}
       </div>

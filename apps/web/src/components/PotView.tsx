@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { BrowserProvider, Interface, id, zeroPadValue, getAddress } from "ethers";
+import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
+import { useWallet } from "../lib/wallet";
 import {
   erc20Readonly,
   escrowReadonly,
@@ -10,7 +12,7 @@ import {
   FACTORY,
 } from "../lib/web3";
 import { erc20Abi, escrowAbi } from "../lib/abi";
-import { formatFixed18, toNumberSafe } from "../lib/numeric";
+import { formatFixed18, toNumberSafe, secondsToMilliseconds } from "../lib/numeric";
 
 
 function fromUnits18(n: bigint): string {
@@ -42,8 +44,26 @@ const fmtCountdown = (secs: number) => {
 type Member = { address: string; amount: bigint };
 
 export default function PotView({ address }: { address: string }) {
+  const { walletProvider } = useAppKitProvider("eip155");
+  const { address: wcAddress, isConnected } = useAppKitAccount();
+      {/* action buttons */}
+      <div className="flex gap-2">
+        <button className="px-3 py-2 rounded border border-gray-300" onClick={approve}>
+          Approve USDC
+        </button>
+        <button className="px-3 py-2 rounded border border-gray-300" onClick={join}>
+          Join
+        </button>
+      </div>
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [me, setMe] = useState<string>("");
+  const wallet = useWallet();
+
+  // Bridge WalletConnect/AppKit provider → ethers BrowserProvider and capture address
+  useEffect(() => {
+    setProvider(wallet.provider);
+    setMe(wallet.address || "");
+  }, [wallet.provider, wallet.address]);
 
   const [fee, setFee] = useState<bigint>(0n);
   const [endTs, setEndTs] = useState<bigint>(0n);
@@ -116,7 +136,7 @@ export default function PotView({ address }: { address: string }) {
         address: FACTORY,
         topics: [topicCreated, null, leagueTopic],
         fromBlock: 0n,
-        toBlock: "latest" as any,
+        toBlock: "latest",
       });
       if (logs.length) {
         const bn = (logs[0] as any).blockNumber as number;
@@ -155,13 +175,15 @@ export default function PotView({ address }: { address: string }) {
 
       if (fromBlock === null) {
         // start at creation block; fallback to recent window
-        fromBlock = await findCreationBlock();
-        if (fromBlock === null) {
+        const foundBlock = await findCreationBlock();
+        if (foundBlock !== null) {
+          fromBlock = foundBlock;
+        } else {
           const latest0 = BigInt(await prov.getBlockNumber());
           fromBlock = latest0 > 200_000n ? latest0 - 200_000n : 0n;
         }
       }
-
+      
       const latest = BigInt(await prov.getBlockNumber());
       if (fromBlock > latest) {
         setLoadingMembers(false);
@@ -169,31 +191,31 @@ export default function PotView({ address }: { address: string }) {
       }
 
       // chunked scan
-      const step = 20_000n;   // blocks per request
-      const parallel = 4;     // concurrent requests
+      const step = 20000n;
       let start = fromBlock;
 
       while (start <= latest) {
-        const batch: Promise<any[]>[] = [];
-        for (let i = 0; i < parallel && start <= latest; i++) {
-          const end = start + step - 1n > latest ? latest : start + step - 1n;
-          batch.push(
-            prov.getLogs({ address, topics: [topicJoined], fromBlock: start, toBlock: end })
-          );
-          start = end + 1n;
-        }
-        const results = await Promise.allSettled(batch);
-        for (const r of results) {
-          if (r.status !== "fulfilled") continue;
-          for (const l of r.value as any[]) {
+        const end = start + step > latest ? latest : start + step;
+        try {
+          const logs = await prov.getLogs({
+            address,
+            topics: [topicJoined],
+            fromBlock: start,
+            toBlock: end,
+          });
+
+          for (const l of logs) {
             try {
-              const parsed = iface.parseLog(l) as any;
+              const parsed = iface.parseLog(l as any) as any;
               const a = String(parsed.args?.account ?? parsed.args?.[0]);
               const n = BigInt(parsed.args?.amount ?? parsed.args?.[1]);
               byAddr.set(a, (byAddr.get(a) ?? 0n) + n);
             } catch {}
           }
+        } catch (e) {
+          console.warn(`Log scan failed for blocks ${start}-${end}:`, e);
         }
+        start = end + 1n;
       }
 
       const list = Array.from(byAddr.entries()).map(([address, amount]) => ({ address, amount }));
@@ -201,10 +223,17 @@ export default function PotView({ address }: { address: string }) {
 
       // update cache
       if (typeof window !== "undefined") {
-        sessionStorage.setItem(key, JSON.stringify({
+        // Dev diagnostic: ensure no BigInt is serialized by accident
+        const cacheObj = {
           last: toNumberSafe(latest),
           entries: list.map(m => [m.address, m.amount.toString()]),
-        }));
+        } as const;
+        // eslint-disable-next-line no-console
+        console.log("[PotView] cache types", {
+          last: typeof cacheObj.last,
+          entry0: list[0] ? typeof list[0].amount : undefined,
+        });
+        sessionStorage.setItem(key, JSON.stringify(cacheObj));
       }
     } catch (e) {
       console.warn("loadMembersFast failed", e);
@@ -314,23 +343,30 @@ export default function PotView({ address }: { address: string }) {
   }
 
   // ---------- derived ----------
+  // Tiny diagnostics to help catch BigInt mixing during build-time SSR
+  // Safe to keep; remove once the build error is resolved.
+  // eslint-disable-next-line no-console
+  console.log("[PotView] derive types", {
+    endTs: typeof endTs,
+    nowMs: typeof nowMs,
+  });
+
   const endDate = useMemo(
-    () => new Date(toNumberSafe(endTs) * 1000).toLocaleString(),
+    () => new Date(secondsToMilliseconds(endTs)).toLocaleString(),
     [endTs]
   );
   const secondsLeft = useMemo(() => {
-    const nowSec = Math.floor(nowMs / 1000);
-    return toNumberSafe(endTs) - nowSec;
+    // Convert once through helper, then do pure number math
+    const endMs = secondsToMilliseconds(endTs);
+    return Math.floor(endMs / 1000) - Math.floor(nowMs / 1000);
   }, [endTs, nowMs]);
   const eligible = secondsLeft <= 0;
   const noGas = me && nativeBal === 0n;
 
   return (
     <div className="space-y-4">
-      <ConnectHint onProvider={setProvider} />
-
       {/* balances banner */}
-      {me ? (
+      {me && (
         <div className="flex flex-col gap-1 rounded-lg border border-gray-200 p-3">
           <div className="text-sm text-gray-600">
             Connected: <span className="font-mono">{me.slice(0, 6)}…{me.slice(-4)}</span> on Polygon Amoy
@@ -347,13 +383,9 @@ export default function PotView({ address }: { address: string }) {
             </div>
           )}
         </div>
-      ) : (
-        <div className="text-sm rounded-lg border border-gray-200 p-3">
-          Connect a wallet to see your balances.
-        </div>
       )}
 
-      {/* pot card + countdown + eligibility */}
+      {/* pot card (Escrow, Entry Fee, Pot Balance, Participants) */}
       <div className="border border-gray-200 p-3 rounded-xl space-y-2">
         <div><b>Escrow</b>: {address}</div>
         <div>Entry Fee: {fromUnits6(fee)} USDC</div>
@@ -393,23 +425,7 @@ export default function PotView({ address }: { address: string }) {
           )}
         </div>
       </div>
-
-      <div className="flex gap-2">
-        <button className="px-3 py-2 rounded border border-gray-300" onClick={approve}>
-          Approve USDC
-        </button>
-        <button className="px-3 py-2 rounded border border-gray-300" onClick={join}>
-          Join
-        </button>
-      </div>
     </div>
   );
 }
 
-function ConnectHint({ onProvider }: { onProvider(p: BrowserProvider | null): void }) {
-  const [Comp, setComp] = useState<any>(null);
-  useEffect(() => {
-    import("./ConnectBar").then((m) => setComp(() => m.default));
-  }, []);
-  return Comp ? <Comp onProvider={onProvider} /> : null;
-}

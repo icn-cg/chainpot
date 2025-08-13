@@ -1,6 +1,6 @@
 {
-    "name": "ChainPots",
-    "short_name": "ChainPots",
+  "name": "ChainPool",
+  "short_name": "ChainPool",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",

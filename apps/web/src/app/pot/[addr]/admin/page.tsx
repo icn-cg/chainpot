@@ -1,20 +1,21 @@
 "use client";
 import { useParams } from "next/navigation";
-import ConnectBar from "../../../../components/ConnectBar";
 import AdminPanel from "../../../../components/AdminPanel";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+
+import ConnectionBanner from "../../../../components/ConnectionBanner";
+import { useAppKitAccount } from "@reown/appkit/react";
 
 export default function AdminPage() {
   const { addr } = useParams<{ addr: string }>();
+  const { isConnected } = useAppKitAccount();
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold">Admin</h1>
-        <ConnectBar />
       </div>
-      <AdminPanel address={addr}/>
+  <ConnectionBanner show={!isConnected} message="Connect a wallet to manage this pot as owner." />
+      <AdminPanel address={addr} />
     </div>
   );
 }

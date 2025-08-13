@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { BrowserProvider } from "ethers";
+import { useAppKitProvider, useAppKitAccount } from "@reown/appkit/react";
+import { useWallet } from "../lib/wallet";
 import {
   escrowReadonly,
   escrowWrite,
@@ -9,7 +11,7 @@ import {
   erc20Write,
   toUnits6,
 } from "../lib/web3";
-import { toNumberSafe } from "src/lib/numeric";
+import { toNumberSafe, secondsToMilliseconds } from "src/lib/numeric";
 
 type Winner = { address: string; bps: number };
 
@@ -48,6 +50,9 @@ const fmtCountdown = (secs: number) => {
 
 export default function AdminPanel({ address }: { address: string }) {
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  const { walletProvider } = useAppKitProvider("eip155");
+  const { address: wcAddress, isConnected } = useAppKitAccount();
+  const wallet = useWallet();
   const [isOwner, setIsOwner] = useState(false);
   const [owner, setOwner] = useState<string>("");
 
@@ -57,6 +62,11 @@ export default function AdminPanel({ address }: { address: string }) {
 
   const [winners, setWinners] = useState<Winner[]>([{ address: "", bps: 10000 }]);
   const [me, setMe] = useState<string>("");
+
+  // Bridge WalletConnect/AppKit provider → ethers BrowserProvider
+  useEffect(() => {
+    setProvider(wallet.provider);
+  }, [wallet.provider]);
 
   // faucet UI
   const [fTo, setFTo] = useState<string>("");
@@ -71,7 +81,7 @@ export default function AdminPanel({ address }: { address: string }) {
   }, []);
   const secondsLeft = useMemo(() => {
     const nowSec = Math.floor(nowMs / 1000);
-    return toNumberSafe(endTs) - nowSec;
+  return Math.floor(secondsToMilliseconds(endTs) / 1000) - nowSec;
   }, [endTs, nowMs]);
   const eligible = secondsLeft <= 0;
 
@@ -84,20 +94,30 @@ export default function AdminPanel({ address }: { address: string }) {
 
       const e = await escR.leagueEndTime();
       setEndTs(e);
-      setEnd(new Date(toNumberSafe(e) * 1000).toISOString().slice(0, 16));
+      setEnd(new Date(secondsToMilliseconds(e)).toISOString().slice(0, 16));
       setFee(fromUnits6(await escR.entryFee()));
 
-      if (provider) {
-        const s = await provider.getSigner();
-        const addr = await s.getAddress();
-        setMe(addr);
-        setIsOwner(addr.toLowerCase() === o.toLowerCase());
-      } else {
-        setMe("");
-        setIsOwner(false);
+      // Prefer wallet hook address for immediacy
+      if (wallet.address) {
+        setMe(wallet.address);
+        setIsOwner(wallet.address.toLowerCase() === o.toLowerCase());
+        return;
       }
+
+      if (provider) {
+        try {
+          const s = await provider.getSigner();
+          const addr = await s.getAddress();
+          setMe(addr);
+          setIsOwner(addr.toLowerCase() === o.toLowerCase());
+          return;
+        } catch {}
+      }
+
+      setMe("");
+      setIsOwner(false);
     })();
-  }, [provider, address]);
+  }, [provider, wallet.address, address]);
 
   // Pre-fill winners + faucet recipient with my address if I'm owner
   useEffect(() => {
@@ -169,7 +189,7 @@ export default function AdminPanel({ address }: { address: string }) {
   }
   function setW(i: number, key: "address" | "bps", v: string) {
     const copy = [...winners];
-    (copy[i] as any)[key] = key === "bps" ? Number(v) : v;
+    (copy[i] as any)[key] = key === "bps" ? toNumberSafe(v) : v;
     setWinners(copy);
   }
   function rmW(i: number) {
@@ -178,13 +198,12 @@ export default function AdminPanel({ address }: { address: string }) {
 
   return (
     <div className="space-y-4">
-      <ConnectHint onProvider={setProvider} />
 
       <div className="border border-gray-200 p-3 rounded-xl space-y-1">
         <div><b>Owner</b>: {owner}</div>
         <div>Params frozen: {String(frozen)} (freeze occurs on first join)</div>
         <div className="flex gap-2 items-center">
-          <span>Ends: {new Date(toNumberSafe(endTs) * 1000).toLocaleString()}</span>
+          <span>Ends: {new Date(secondsToMilliseconds(endTs)).toLocaleString()}</span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full border ${
               eligible
@@ -197,7 +216,7 @@ export default function AdminPanel({ address }: { address: string }) {
         </div>
       </div>
 
-      {!isOwner ? (
+  {!isOwner ? (
         <div className="p-3 rounded border border-amber-200 bg-amber-50">
           Connect as owner to manage.
         </div>
@@ -297,12 +316,4 @@ export default function AdminPanel({ address }: { address: string }) {
       )}
     </div>
   );
-}
-
-function ConnectHint({ onProvider }: { onProvider(p: BrowserProvider | null): void }) {
-  const [Comp, setComp] = useState<any>(null);
-  useEffect(() => {
-    import("./ConnectBar").then((m) => setComp(() => m.default));
-  }, []);
-  return Comp ? <Comp onProvider={onProvider} /> : null;
 }

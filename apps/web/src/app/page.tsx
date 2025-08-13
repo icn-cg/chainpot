@@ -1,9 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import ConnectBar from "../components/ConnectBar";
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default function Home() {
   const [addr, setAddr] = useState("");
@@ -11,7 +7,6 @@ export default function Home() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold">Welcome</h1>
-        <ConnectBar />
       </div>
 
       <div className="border border-gray-200 p-3 rounded-xl">
