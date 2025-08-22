@@ -13,7 +13,7 @@ export default function PotPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Pot</h1>
+        <h1 className="text-xl font-semibold">Pool</h1>
       </div>
       <ConnectionBanner show={!isConnected} message="Connect a wallet to see your balances." />
       <PotView address={addr} />

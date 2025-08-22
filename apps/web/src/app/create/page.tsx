@@ -4,8 +4,12 @@ import { BrowserProvider, Contract, type ContractTransactionReceipt, type Log } 
 import { USDC, factoryWrite, signerAddress, toUnixTs, toUnits6 } from '../../lib/web3';
 import { factoryAbi } from '../../lib/abi';
 import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-export default function CreatePotPage() {
+export default function CreatePoolPage() {
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [entry, setEntry] = useState('50');
   const [end, setEnd] = useState<string>('');
@@ -59,64 +63,83 @@ export default function CreatePotPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Create Pot</h1>
+        <h1 className="text-2xl font-bold">Create Pool</h1>
       </div>
 
-      <div className="border border-gray-200 p-3 rounded-xl space-y-3">
-        <label className="flex gap-2 items-center">
-          <span className="w-40">Token:</span>
-          <input
-            className="flex-1 border border-gray-300 rounded px-2 py-1"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-          />
-        </label>
-
-        <label className="flex gap-2 items-center">
-          <span className="w-40">Entry Fee (USDC):</span>
-          <input
-            className="flex-1 border border-gray-300 rounded px-2 py-1"
-            value={entry}
-            onChange={(e) => setEntry(e.target.value)}
-          />
-        </label>
-
-        <label className="flex gap-2 items-center">
-          <span className="w-40">End time:</span>
-          <input
-            type="datetime-local"
-            className="flex-1 border border-gray-300 rounded px-2 py-1"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-          />
-        </label>
-
-        <button className="px-3 py-2 rounded border border-gray-300" onClick={create}>
-          Create League
-        </button>
-
-        {txHash && (
-          <div>
-            Tx:{' '}
-            <a
-              className="underline"
-              href={`https://www.oklink.com/amoy/tx/${txHash}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {txHash.slice(0, 10)}…
-            </a>
+      <Card>
+        <CardHeader>
+          <CardTitle>Pool Configuration</CardTitle>
+          <CardDescription>
+            Set up your new Chainpool with entry fee and duration
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="token">Token Address</Label>
+            <Input
+              id="token"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="0x..."
+            />
           </div>
-        )}
-        {potAddr && (
-          <div>
-            New Pot:{' '}
-            <Link className="underline" href={`/pot/${potAddr}`}>
-              {potAddr}
-            </Link>
+
+          <div className="space-y-2">
+            <Label htmlFor="entry">Entry Fee (USDC)</Label>
+            <Input
+              id="entry"
+              value={entry}
+              onChange={(e) => setEntry(e.target.value)}
+              placeholder="50"
+              type="number"
+            />
           </div>
-        )}
-      </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="end">End Time</Label>
+            <Input
+              id="end"
+              type="datetime-local"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+            />
+          </div>
+
+          <Button onClick={create} className="w-full">
+            Create Pool
+          </Button>
+
+          {txHash && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Transaction:{' '}
+                <a
+                  className="underline hover:no-underline"
+                  href={`https://www.oklink.com/amoy/tx/${txHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {txHash.slice(0, 10)}…
+                </a>
+              </p>
+            </div>
+          )}
+          
+          {potAddr && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                New Pool Created:{' '}
+                <Link 
+                  className="underline hover:no-underline font-mono"
+                  href={`/pot/${potAddr}`}
+                >
+                  {potAddr}
+                </Link>
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

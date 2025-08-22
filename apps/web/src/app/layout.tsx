@@ -7,8 +7,8 @@ import { WalletProvider } from '../components/WalletProvider';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
-  title: 'ChainPots',
-  description: 'Privately funded money pools',
+  title: 'Chainpool',
+  description: 'Decentralized money pools with smart billing and referrals',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WalletProvider>
             <div className="p-4 flex items-center justify-between">
               <a href="/" className="font-bold">
-                ChainPots
+                Chainpool
               </a>
               <ConnectBar />
             </div>

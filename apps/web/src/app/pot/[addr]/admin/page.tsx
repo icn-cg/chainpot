@@ -15,7 +15,7 @@ export default function AdminPage() {
       </div>
       <ConnectionBanner
         show={!isConnected}
-        message="Connect a wallet to manage this pot as owner."
+        message="Connect a wallet to manage this pool as owner."
       />
       <AdminPanel address={addr} />
     </div>

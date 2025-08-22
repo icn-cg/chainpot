@@ -1,40 +1,67 @@
 'use client';
 import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import Link from 'next/link';
 
 export default function Home() {
   const [addr, setAddr] = useState('');
+  
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Welcome</h1>
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Welcome to Chainpool</h1>
+        <p className="text-muted-foreground">Decentralized money pools with smart billing and referrals</p>
       </div>
 
-      <div className="border border-gray-200 p-3 rounded-xl">
-        <h3 className="font-semibold mb-2">Create a pot</h3>
-        <a className="px-3 py-2 rounded border border-gray-300 inline-block" href="/create">
-          Go to Create
-        </a>
-      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create a Pool</CardTitle>
+            <CardDescription>
+              Start a new money pool with custom entry fees and duration
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/create">
+              <Button className="w-full">Create New Pool</Button>
+            </Link>
+          </CardContent>
+        </Card>
 
-      <div className="border border-gray-200 p-3 rounded-xl">
-        <h3 className="font-semibold mb-2">Open an existing pot</h3>
-        <div className="flex gap-2">
-          <input
-            className="flex-1 border border-gray-300 rounded px-2 py-1"
-            placeholder="0xPotAddress"
-            value={addr}
-            onChange={(e) => setAddr(e.target.value)}
-          />
-          <a
-            className="px-3 py-2 rounded border border-gray-300 inline-block"
-            href={addr ? `/pot/${addr}` : '#'}
-          >
-            Open
-          </a>
-        </div>
-        <p className="mt-2 text-sm">
-          Your fresh pot: <code>0xC9e2125c0F792781A80dcE2c396Ce277F030A0a3</code>
-        </p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Join Existing Pool</CardTitle>
+            <CardDescription>
+              Enter a pool address to view details and participate
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="0xPoolAddress..."
+                value={addr}
+                onChange={(e) => setAddr(e.target.value)}
+                className="flex-1"
+              />
+              <Link href={addr ? `/pot/${addr}` : '#'}>
+                <Button variant="outline" disabled={!addr}>
+                  Open
+                </Button>
+              </Link>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-1">Demo Pool:</p>
+              <Link href="/pot/0xC9e2125c0F792781A80dcE2c396Ce277F030A0a3">
+                <Badge variant="secondary" className="font-mono text-xs">
+                  0xC9e2125c0F792781A80dcE2c396Ce277F030A0a3
+                </Badge>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
