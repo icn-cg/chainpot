@@ -8,7 +8,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'Chainpool',
-  description: 'Decentralized money pools with smart billing and referrals',
+  description: 'Privately funded money pools',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

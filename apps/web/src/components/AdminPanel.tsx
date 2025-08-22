@@ -4,8 +4,8 @@ import { BrowserProvider } from 'ethers';
 import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react';
 import { useWallet } from './WalletProvider';
 import {
-  escrowReadonly,
-  escrowWrite,
+  poolEscrowReadonly,
+  poolEscrowWrite,
   fromUnits6,
   toUnixTs,
   erc20Write,
@@ -87,7 +87,7 @@ export default function AdminPanel({ address }: { address: string }) {
 
   useEffect(() => {
     (async () => {
-      const escR = escrowReadonly(address);
+      const escR = poolEscrowReadonly(address);
       const o = await escR.owner();
       setOwner(o);
       setFrozen(await escR.paramsFrozen());
@@ -131,14 +131,14 @@ export default function AdminPanel({ address }: { address: string }) {
 
   async function updateFee() {
     if (!provider) return alert('Connect');
-    const esc = await escrowWrite(address, provider);
+    const esc = await poolEscrowWrite(address, provider);
     const tx = await esc.updateEntryFee(toUnits6(fee));
     await tx.wait();
     alert('Fee updated.');
   }
   async function updateEnd() {
     if (!provider) return alert('Connect');
-    const esc = await escrowWrite(address, provider);
+    const esc = await poolEscrowWrite(address, provider);
     const tx = await esc.updateLeagueEndTime(toUnixTs(end));
     await tx.wait();
     alert('End time updated.');
@@ -147,7 +147,7 @@ export default function AdminPanel({ address }: { address: string }) {
     if (!provider) return alert('Connect');
     const sum = winners.reduce((a, w) => a + toNumberSafe(w.bps || 0), 0);
     if (sum !== 10000) return alert('Bps must sum to 10000.');
-    const esc = await escrowWrite(address, provider);
+    const esc = await poolEscrowWrite(address, provider);
     const addrs = winners.map((w) => w.address);
     const bps = winners.map((w) => BigInt(w.bps));
     const tx = await esc.setWinners(addrs, bps);
@@ -156,14 +156,14 @@ export default function AdminPanel({ address }: { address: string }) {
   }
   async function payout() {
     if (!provider) return alert('Connect');
-    const esc = await escrowWrite(address, provider);
+    const esc = await poolEscrowWrite(address, provider);
     const tx = await esc.payout();
     await tx.wait();
     alert('Paid out.');
   }
   async function cancel() {
     if (!provider) return alert('Connect');
-    const esc = await escrowWrite(address, provider);
+    const esc = await poolEscrowWrite(address, provider);
     const tx = await esc.cancelLeague();
     await tx.wait();
     alert('Cancelled. Participants can claimRefund().');
@@ -173,7 +173,7 @@ export default function AdminPanel({ address }: { address: string }) {
   async function faucet() {
     if (!provider) return alert('Connect');
     try {
-      const escR = escrowReadonly(address);
+      const escR = poolEscrowReadonly(address);
       const tokAddr = await escR.token();
       const tokW = await erc20Write(provider, tokAddr);
       const tx = await tokW.transfer(fTo, toUnits6(fAmt));

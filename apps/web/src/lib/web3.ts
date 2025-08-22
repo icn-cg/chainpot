@@ -1,13 +1,17 @@
 'use client';
 import { BrowserProvider, Contract, JsonRpcProvider } from 'ethers';
-import { factoryAbi, escrowAbi, erc20Abi } from './abi';
+import { poolFactoryAbi, poolEscrowAbi, erc20Abi } from './abi';
 import { toNumberSafe } from './numeric';
 
 /** ---------- ENV ---------- */
 export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || '80002');
 export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://rpc-amoy.polygon.technology';
-export const FACTORY = process.env.NEXT_PUBLIC_FACTORY_ADDRESS!;
-export const USDC = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
+
+// Pool architecture contracts
+export const POOL_FACTORY = process.env.NEXT_PUBLIC_POOL_FACTORY_ADDRESS!;
+export const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
+export const POOL_USDC = USDC_ADDRESS;
+export const FEE_COLLECTOR = process.env.NEXT_PUBLIC_FEE_COLLECTOR_ADDRESS;
 
 /** ---------- RPC ---------- */
 export function rpc() {
@@ -84,26 +88,26 @@ export async function signerAddress(provider: BrowserProvider) {
 }
 
 /** ---------- READ contracts (Provider) ---------- */
-export function factoryReadonly() {
-  return new Contract(FACTORY, factoryAbi, rpc());
+export function poolFactoryReadonly() {
+  return new Contract(POOL_FACTORY, poolFactoryAbi, rpc());
 }
-export function escrowReadonly(addr: string) {
-  return new Contract(addr, escrowAbi, rpc());
+export function poolEscrowReadonly(addr: string) {
+  return new Contract(addr, poolEscrowAbi, rpc());
 }
-export function erc20Readonly(addr: string = USDC) {
+export function erc20Readonly(addr: string = USDC_ADDRESS) {
   return new Contract(addr, erc20Abi, rpc());
 }
 
 /** ---------- WRITE contracts (Signer) ---------- */
-export async function factoryWrite(provider: BrowserProvider) {
+export async function poolFactoryWrite(provider: BrowserProvider) {
   const signer = await provider.getSigner();
-  return new Contract(FACTORY, factoryAbi, signer);
+  return new Contract(POOL_FACTORY, poolFactoryAbi, signer);
 }
-export async function escrowWrite(addr: string, provider: BrowserProvider) {
+export async function poolEscrowWrite(addr: string, provider: BrowserProvider) {
   const signer = await provider.getSigner();
-  return new Contract(addr, escrowAbi, signer);
+  return new Contract(addr, poolEscrowAbi, signer);
 }
-export async function erc20Write(provider: BrowserProvider, addr: string = USDC) {
+export async function erc20Write(provider: BrowserProvider, addr: string = USDC_ADDRESS) {
   const signer = await provider.getSigner();
   return new Contract(addr, erc20Abi, signer);
 }

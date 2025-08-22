@@ -1,64 +1,75 @@
 'use client';
 import React, { useState } from 'react';
-import { BrowserProvider, Contract, type ContractTransactionReceipt, type Log } from 'ethers';
-import { USDC, factoryWrite, signerAddress, toUnixTs, toUnits6 } from '../../lib/web3';
-import { factoryAbi } from '../../lib/abi';
+import { BrowserProvider } from 'ethers';
+import { useWallet } from '../../components/WalletProvider';
+import { createPool } from '../../lib/pool';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PoolMode, FeePolicy } from '../../lib/abi';
+import type { CreatePoolFormData } from '../../types/pool';
 
 export default function CreatePoolPage() {
-  const [provider, setProvider] = useState<BrowserProvider | null>(null);
-  const [entry, setEntry] = useState('50');
-  const [end, setEnd] = useState<string>('');
-  const [token, setToken] = useState<string>(USDC);
-  const [txHash, setTxHash] = useState<string>('');
-  const [potAddr, setPotAddr] = useState<string>('');
+  const { provider } = useWallet();
+  const [loading, setLoading] = useState(false);
+  const [poolAddress, setPoolAddress] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
-  async function create() {
-    try {
-      if (!provider) return alert('Connect a wallet first');
-      if (!end) return alert('Pick an end time');
-      const endTs = toUnixTs(end);
-      if (endTs <= 0n) return alert('End time is invalid');
+  // Form state
+  const [formData, setFormData] = useState<CreatePoolFormData>({
+    mode: 'FIXED_ENTRY',
+    entryUnit: '50',
+    endTime: '',
+    referralBps: 500, // 5%
+    restricted: false,
+    feePolicy: 'ORGANIZER_ABSORB',
+  });
 
-      const fac = await factoryWrite(provider); // signer-bound
-      const owner = await signerAddress(provider);
-      const fee = toUnits6(entry);
+  const handleInputChange = (field: keyof CreatePoolFormData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-      const tx = await fac.createLeague(owner, token, fee, endTs);
-      const rc = (await tx.wait()) as ContractTransactionReceipt | null;
-      setTxHash(rc?.hash ?? '');
-
-      // Parse LeagueCreated event (best effort)
-      let createdAddr = '';
-      if (rc?.logs?.length) {
-        const parsed = (rc.logs as Log[])
-          .map((l: Log) => {
-            try {
-              return (fac as Contract).interface.parseLog(l);
-            } catch {
-              return null;
-            }
-          })
-          .find(
-            (ev): ev is NonNullable<ReturnType<(typeof fac)['interface']['parseLog']>> =>
-              !!ev && ev.name === 'LeagueCreated'
-          );
-        if (parsed?.args?.league) createdAddr = String(parsed.args.league);
-      }
-
-      if (!createdAddr) {
-        const mine: string[] = await fac.leaguesOf(owner);
-        createdAddr = mine[mine.length - 1];
-      }
-      setPotAddr(createdAddr);
-    } catch (e: any) {
-      alert(e?.reason || e?.message || String(e));
+  const createNewPool = async () => {
+    if (!provider) {
+      setError('Please connect your wallet first');
+      return;
     }
-  }
+
+    if (!formData.endTime) {
+      setError('Please select an end time');
+      return;
+    }
+
+    if (formData.mode === 'FIXED_ENTRY' && !formData.entryUnit) {
+      setError('Please enter an entry amount for fixed pools');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const poolAddr = await createPool(provider, {
+        mode: formData.mode,
+        entryUnit: formData.mode === 'FIXED_ENTRY' ? formData.entryUnit : undefined,
+        endTime: formData.endTime,
+        referralBps: formData.referralBps,
+        restricted: formData.restricted,
+        feePolicy: formData.feePolicy,
+      });
+
+      setPoolAddress(poolAddr);
+    } catch (err: any) {
+      console.error('Pool creation failed:', err);
+      setError(err?.reason || err?.message || 'Pool creation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -70,73 +81,203 @@ export default function CreatePoolPage() {
         <CardHeader>
           <CardTitle>Pool Configuration</CardTitle>
           <CardDescription>
-            Set up your new Chainpool with entry fee and duration
+            Set up your new Chainpool with entry requirements and duration
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="token">Token Address</Label>
-            <Input
-              id="token"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="0x..."
-            />
+        <CardContent className="space-y-6">
+          {/* Pool Mode Selection */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Pool Type</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Card
+                className={`cursor-pointer transition-all ${
+                  formData.mode === 'FIXED_ENTRY'
+                    ? 'ring-2 ring-primary bg-primary/5'
+                    : 'hover:bg-muted/50'
+                }`}
+                onClick={() => handleInputChange('mode', 'FIXED_ENTRY')}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        formData.mode === 'FIXED_ENTRY'
+                          ? 'bg-primary border-primary'
+                          : 'border-muted-foreground'
+                      }`}
+                    />
+                    <div>
+                      <h3 className="font-semibold">Fixed Entry</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Everyone contributes the same amount
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                className={`cursor-pointer transition-all ${
+                  formData.mode === 'FLEXIBLE_AMOUNT'
+                    ? 'ring-2 ring-primary bg-primary/5'
+                    : 'hover:bg-muted/50'
+                }`}
+                onClick={() => handleInputChange('mode', 'FLEXIBLE_AMOUNT')}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        formData.mode === 'FLEXIBLE_AMOUNT'
+                          ? 'bg-primary border-primary'
+                          : 'border-muted-foreground'
+                      }`}
+                    />
+                    <div>
+                      <h3 className="font-semibold">Flexible Amount</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Contributors choose their amount
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="entry">Entry Fee (USDC)</Label>
-            <Input
-              id="entry"
-              value={entry}
-              onChange={(e) => setEntry(e.target.value)}
-              placeholder="50"
-              type="number"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="end">End Time</Label>
-            <Input
-              id="end"
-              type="datetime-local"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-            />
-          </div>
-
-          <Button onClick={create} className="w-full">
-            Create Pool
-          </Button>
-
-          {txHash && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                Transaction:{' '}
-                <a
-                  className="underline hover:no-underline"
-                  href={`https://www.oklink.com/amoy/tx/${txHash}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {txHash.slice(0, 10)}…
-                </a>
+          {/* Entry Amount (Fixed mode only) */}
+          {formData.mode === 'FIXED_ENTRY' && (
+            <div className="space-y-2">
+              <Label htmlFor="entryUnit">Entry Amount (USDC)</Label>
+              <Input
+                id="entryUnit"
+                value={formData.entryUnit}
+                onChange={(e) => handleInputChange('entryUnit', e.target.value)}
+                placeholder="50"
+                type="number"
+                min="0"
+                step="0.01"
+              />
+              <p className="text-sm text-muted-foreground">
+                Fixed amount each contributor must pay to join the pool
               </p>
             </div>
           )}
-          
-          {potAddr && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-800">
-                New Pool Created:{' '}
-                <Link 
-                  className="underline hover:no-underline font-mono"
-                  href={`/pot/${potAddr}`}
-                >
-                  {potAddr}
-                </Link>
-              </p>
+
+          {/* End Time */}
+          <div className="space-y-2">
+            <Label htmlFor="endTime">End Time</Label>
+            <Input
+              id="endTime"
+              type="datetime-local"
+              value={formData.endTime}
+              onChange={(e) => handleInputChange('endTime', e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">
+              When the pool closes and becomes eligible for payout
+            </p>
+          </div>
+
+          {/* Referral Rate */}
+          <div className="space-y-2">
+            <Label htmlFor="referralBps">Referral Rate (%)</Label>
+            <Input
+              id="referralBps"
+              value={formData.referralBps / 100}
+              onChange={(e) =>
+                handleInputChange(
+                  'referralBps',
+                  Math.round(parseFloat(e.target.value || '0') * 100)
+                )
+              }
+              placeholder="5"
+              type="number"
+              min="0"
+              max="10"
+              step="0.1"
+            />
+            <p className="text-sm text-muted-foreground">
+              Percentage of contributions that go to referrers (0-10%)
+            </p>
+          </div>
+
+          {/* Fee Policy */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Referral Fee Policy</Label>
+            <div className="space-y-2">
+              <Card
+                className={`cursor-pointer transition-all ${
+                  formData.feePolicy === 'ORGANIZER_ABSORB'
+                    ? 'ring-2 ring-primary bg-primary/5'
+                    : 'hover:bg-muted/50'
+                }`}
+                onClick={() => handleInputChange('feePolicy', 'ORGANIZER_ABSORB')}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        formData.feePolicy === 'ORGANIZER_ABSORB'
+                          ? 'bg-primary border-primary'
+                          : 'border-muted-foreground'
+                      }`}
+                    />
+                    <div>
+                      <h4 className="font-medium">Organizer Absorbs</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Referral fees are deducted from your payout
+                      </p>
+                      <Badge variant="secondary" className="mt-1">
+                        Recommended
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+          </div>
+
+          {/* Access Control */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="restricted"
+                checked={formData.restricted}
+                onChange={(e) => handleInputChange('restricted', e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="restricted">Restricted Access</Label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Only allow specific addresses to contribute (allowlist required)
+            </p>
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button onClick={createNewPool} disabled={loading} className="w-full">
+            {loading ? 'Creating Pool...' : 'Create Pool'}
+          </Button>
+
+          {poolAddress && (
+            <Alert>
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-medium text-green-800">Pool Created Successfully!</p>
+                  <Link
+                    className="underline hover:no-underline font-mono text-sm"
+                    href={`/pot/${poolAddress}`}
+                  >
+                    {poolAddress}
+                  </Link>
+                </div>
+              </AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
