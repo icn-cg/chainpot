@@ -13,7 +13,7 @@ import {
 } from '../lib/web3';
 import { toNumberSafe, secondsToMilliseconds } from 'src/lib/numeric';
 
-type Winner = { address: string; bps: number };
+type Recipient = { address: string; bps: number };
 
 // Set NEXT_PUBLIC_DEV_FAUCET=0 in .env.local to hide the faucet block
 const DEV_FAUCET = process.env.NEXT_PUBLIC_DEV_FAUCET ?? '1';
@@ -60,7 +60,7 @@ export default function AdminPanel({ address }: { address: string }) {
   const [fee, setFee] = useState<string>('');
   const [frozen, setFrozen] = useState<boolean>(true);
 
-  const [winners, setWinners] = useState<Winner[]>([{ address: '', bps: 10000 }]);
+  const [recipients, setRecipients] = useState<Recipient[]>([{ address: '', bps: 10000 }]);
   const [me, setMe] = useState<string>('');
 
   // Bridge WalletConnect/AppKit provider → ethers BrowserProvider
@@ -88,14 +88,23 @@ export default function AdminPanel({ address }: { address: string }) {
   useEffect(() => {
     (async () => {
       const escR = poolEscrowReadonly(address);
-      const o = await escR.owner();
+      const o = await escR.organizer();
       setOwner(o);
-      setFrozen(await escR.paramsFrozen());
+      // Note: new pools don't have paramsFrozen - they're immutable after creation
+      setFrozen(true);
 
-      const e = await escR.leagueEndTime();
+      const e = await escR.endTime();
       setEndTs(e);
       setEnd(new Date(secondsToMilliseconds(e)).toISOString().slice(0, 16));
-      setFee(fromUnits6(await escR.entryFee()));
+      
+      // New pools have different fee structure - check if it's fixed or flexible
+      try {
+        const entryUnit = await escR.entryUnit();
+        setFee(fromUnits6(entryUnit));
+      } catch {
+        // Flexible pool - no fixed entry fee
+        setFee('0');
+      }
 
       // Prefer wallet hook address for immediacy
       if (wallet.address) {
@@ -119,40 +128,32 @@ export default function AdminPanel({ address }: { address: string }) {
     })();
   }, [provider, wallet.address, address]);
 
-  // Pre-fill winners + faucet recipient with my address if I'm owner
+  // Pre-fill recipients + faucet recipient with my address if I'm organizer
   useEffect(() => {
     if (isOwner && me) {
-      if (winners.length === 1 && winners[0].address === '') {
-        setWinners([{ address: me, bps: 10000 }]);
+      if (recipients.length === 1 && recipients[0].address === '') {
+        setRecipients([{ address: me, bps: 10000 }]);
       }
       if (!fTo) setFTo(me);
     }
   }, [isOwner, me]);
 
   async function updateFee() {
-    if (!provider) return alert('Connect');
-    const esc = await poolEscrowWrite(address, provider);
-    const tx = await esc.updateEntryFee(toUnits6(fee));
-    await tx.wait();
-    alert('Fee updated.');
+    alert('Pool entry fees cannot be modified after creation in the new system.');
   }
   async function updateEnd() {
-    if (!provider) return alert('Connect');
-    const esc = await poolEscrowWrite(address, provider);
-    const tx = await esc.updateLeagueEndTime(toUnixTs(end));
-    await tx.wait();
-    alert('End time updated.');
+    alert('Pool end times cannot be modified after creation in the new system.');
   }
-  async function doSetWinners() {
+  async function setRecipientsOnChain() {
     if (!provider) return alert('Connect');
-    const sum = winners.reduce((a, w) => a + toNumberSafe(w.bps || 0), 0);
+    const sum = recipients.reduce((a: number, r: Recipient) => a + toNumberSafe(r.bps || 0), 0);
     if (sum !== 10000) return alert('Bps must sum to 10000.');
     const esc = await poolEscrowWrite(address, provider);
-    const addrs = winners.map((w) => w.address);
-    const bps = winners.map((w) => BigInt(w.bps));
-    const tx = await esc.setWinners(addrs, bps);
+    const addrs = recipients.map((r: Recipient) => r.address);
+    const bps = recipients.map((r: Recipient) => BigInt(r.bps));
+    const tx = await esc.setRecipients(addrs, bps); // Updated function name
     await tx.wait();
-    alert('Winners set.');
+    alert('Recipients set.');
   }
   async function payout() {
     if (!provider) return alert('Connect');
@@ -164,7 +165,7 @@ export default function AdminPanel({ address }: { address: string }) {
   async function cancel() {
     if (!provider) return alert('Connect');
     const esc = await poolEscrowWrite(address, provider);
-    const tx = await esc.cancelLeague();
+    const tx = await esc.cancel(); // Updated function name
     await tx.wait();
     alert('Cancelled. Participants can claimRefund().');
   }
@@ -184,16 +185,16 @@ export default function AdminPanel({ address }: { address: string }) {
     }
   }
 
-  function addWinner() {
-    setWinners([...winners, { address: '', bps: 0 }]);
+  function addRecipient() {
+    setRecipients([...recipients, { address: '', bps: 0 }]);
   }
-  function setW(i: number, key: 'address' | 'bps', v: string) {
-    const copy = [...winners];
+  function setR(i: number, key: 'address' | 'bps', v: string) {
+    const copy = [...recipients];
     (copy[i] as any)[key] = key === 'bps' ? toNumberSafe(v) : v;
-    setWinners(copy);
+    setRecipients(copy);
   }
-  function rmW(i: number) {
-    setWinners(winners.filter((_, j) => j !== i));
+  function rmR(i: number) {
+    setRecipients(recipients.filter((_, j: number) => j !== i));
   }
 
   return (
@@ -251,39 +252,39 @@ export default function AdminPanel({ address }: { address: string }) {
           </div>
 
           <div className="border border-gray-200 p-3 rounded-xl">
-            <h3 className="font-semibold mb-2">Winners (bps sum to 10000)</h3>
-            {winners.map((w, i) => (
+            <h3 className="font-semibold mb-2">Recipients (bps sum to 10000)</h3>
+            {recipients.map((r, i) => (
               <div key={i} className="flex gap-2 items-center my-2">
                 <input
                   className="flex-1 border border-gray-300 rounded px-2 py-1"
-                  placeholder="0xWinner..."
-                  value={w.address}
-                  onChange={(e) => setW(i, 'address', e.target.value)}
+                  placeholder="0xRecipient..."
+                  value={r.address}
+                  onChange={(e) => setR(i, 'address', e.target.value)}
                 />
                 <input
                   className="w-28 border border-gray-300 rounded px-2 py-1"
                   type="number"
                   placeholder="bps"
-                  value={w.bps}
-                  onChange={(e) => setW(i, 'bps', e.target.value)}
+                  value={r.bps}
+                  onChange={(e) => setR(i, 'bps', e.target.value)}
                 />
-                <button className="px-2 py-1 rounded border border-gray-300" onClick={() => rmW(i)}>
+                <button className="px-2 py-1 rounded border border-gray-300" onClick={() => rmR(i)}>
                   ✕
                 </button>
               </div>
             ))}
             <div className="flex gap-2">
-              <button className="px-3 py-2 rounded border border-gray-300" onClick={addWinner}>
-                + Add Winner
+              <button className="px-3 py-2 rounded border border-gray-300" onClick={addRecipient}>
+                + Add Recipient
               </button>
-              <button className="px-3 py-2 rounded border border-gray-300" onClick={doSetWinners}>
-                Set Winners
+              <button className="px-3 py-2 rounded border border-gray-300" onClick={setRecipientsOnChain}>
+                Set Recipients
               </button>
               <button className="px-3 py-2 rounded border border-gray-300" onClick={payout}>
                 Payout
               </button>
               <button className="px-3 py-2 rounded border border-gray-300" onClick={cancel}>
-                Cancel League
+                Cancel Pool
               </button>
             </div>
           </div>

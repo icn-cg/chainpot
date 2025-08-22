@@ -271,7 +271,7 @@ export default function CreatePoolPage() {
                   <p className="font-medium text-green-800">Pool Created Successfully!</p>
                   <Link
                     className="underline hover:no-underline font-mono text-sm"
-                    href={`/pot/${poolAddress}`}
+                    href={`/pool/${poolAddress}`}
                   >
                     {poolAddress}
                   </Link>

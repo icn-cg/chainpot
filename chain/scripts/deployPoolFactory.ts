@@ -6,11 +6,11 @@ async function deployWithRetry(contractName: string, args: any[] = [], retries =
     try {
       const Contract = await ethers.getContractFactory(contractName);
 
-      // Get current gas price and add buffer for testnet
+      // Get current gas price and add conservative buffer
       const feeData = await ethers.provider.getFeeData();
       const gasPrice = feeData.gasPrice
-        ? (feeData.gasPrice * 120n) / 100n
-        : ethers.parseUnits('60', 'gwei'); // Add 20% buffer
+        ? (feeData.gasPrice * 115n) / 100n
+        : ethers.parseUnits('60', 'gwei'); // Add 15% buffer
 
       console.log(`Using gas price: ${ethers.formatUnits(gasPrice, 'gwei')} gwei`);
       const contract = await Contract.deploy(...args, { gasPrice });

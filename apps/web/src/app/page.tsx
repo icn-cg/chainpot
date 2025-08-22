@@ -44,7 +44,7 @@ export default function Home() {
                 onChange={(e) => setAddr(e.target.value)}
                 className="flex-1"
               />
-              <Link href={addr ? `/pot/${addr}` : '#'}>
+              <Link href={addr ? `/pool/${addr}` : '#'}>
                 <Button variant="outline" disabled={!addr}>
                   Open
                 </Button>
@@ -52,11 +52,7 @@ export default function Home() {
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Demo Pool:</p>
-              <Link href="/pot/0xC9e2125c0F792781A80dcE2c396Ce277F030A0a3">
-                <Badge variant="secondary" className="font-mono text-xs">
-                  0xC9e2125c0F792781A80dcE2c396Ce277F030A0a3
-                </Badge>
-              </Link>
+              <p className="text-xs text-muted-foreground">Deploy a pool first to see a demo</p>
             </div>
           </CardContent>
         </Card>

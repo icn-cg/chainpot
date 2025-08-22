@@ -15,7 +15,7 @@ export default function PotPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold">Pool Details</h1>
-        <Link href={`/pot/${addr}/admin`}>
+        <Link href={`/pool/${addr}/admin`}>
           <Button variant="outline">Admin Panel</Button>
         </Link>
       </div>
