@@ -1,12 +1,12 @@
 {
   "name": "hardhat-project",
   "scripts": {
-    "network:testnet": "npx ts-node scripts/networkSwitch.ts testnet",
-    "network:mainnet": "npx ts-node scripts/networkSwitch.ts mainnet",
-    "network:status": "npx ts-node scripts/networkSwitch.ts status",
-    "network:list": "npx ts-node scripts/networkSwitch.ts list",
-    "deploy:testnet": "npm run network:testnet && npx hardhat run scripts/deployComplete.ts --network amoy",
-    "deploy:mainnet": "npm run network:mainnet && npx hardhat run scripts/deployMainnet.ts --network polygon",
+  "network:testnet": "npx ts-node scripts/networkSwitch.ts testnet",
+  "network:mainnet": "npx ts-node scripts/networkSwitch.ts mainnet",
+  "network:status": "npx ts-node scripts/networkSwitch.ts status",
+  "network:list": "npx ts-node scripts/networkSwitch.ts list",
+  "deploy:testnet": "pnpm run network:testnet && npx hardhat run scripts/deployComplete.ts --network amoy",
+  "deploy:mainnet": "pnpm run network:mainnet && npx hardhat run scripts/deployMainnet.ts --network polygon",
     "check:deployment": "npx hardhat run scripts/checkDeployment.ts",
     "check:balance": "npx hardhat run scripts/checkBalance.ts",
     "verify:all": "npx hardhat run scripts/verifyContracts.ts",

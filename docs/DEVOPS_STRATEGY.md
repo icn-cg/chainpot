@@ -1,9 +1,9 @@
 # DevOps Environment Management
 
 ## Overview
-- **Production (Vercel)**: Always uses mainnet USDC (Chain ID 137)
-- **Local Development**: Choose between MockUSDC or MockETH (Chain ID 31337)
-- **Git Safety**: Prod configs are never committed to avoid accidents
+- Production (Vercel): Always uses mainnet USDC (Chain ID 137)
+- Local Development: Choose between MockUSDC or MockETH (Chain ID 31337)
+- Git Safety: Prod configs are never committed to avoid accidents
 
 ## Environment Strategy
 
@@ -20,7 +20,7 @@ NEXT_PUBLIC_DEV_FAUCET=0  # DISABLED in production
 ### 2. Local Development
 ```bash
 # apps/web/.env.local (gitignored, safe to modify)
-# Switched automatically by npm scripts
+# Switched automatically by pnpm scripts
 ```
 
 ## Simple Commands
@@ -28,34 +28,34 @@ NEXT_PUBLIC_DEV_FAUCET=0  # DISABLED in production
 ### Production Deployment
 ```bash
 # Deploy to Vercel (automatically uses mainnet)
-npm run deploy:prod
+pnpm run deploy:vercel
 ```
 
 ### Local Development
 ```bash
 # Start local blockchain + MockUSDC setup
-npm run dev:mockusdc
+pnpm run dev:mockusdc
 
-# Start local blockchain + MockETH setup  
-npm run dev:mocketh
+# Start local blockchain + MockETH setup
+pnpm run dev:mocketh
 
 # Quick switch without restarting (if blockchain already running)
-npm run switch:mockusdc
-npm run switch:mocketh
-npm run switch:mainnet  # for testing mainnet config locally
+pnpm run switch:mockusdc
+pnpm run switch:mocketh
+pnpm run switch:mainnet  # for testing mainnet config locally
 ```
 
 ### Blockchain Management
 ```bash
 # Start fresh local blockchain
-npm run chain:start
+pnpm run chain:start
 
 # Deploy contracts to running chain
-npm run chain:deploy:mockusdc
-npm run chain:deploy:mocketh
+pnpm run chain:deploy:mockusdc
+pnpm run chain:deploy:mocketh
 
 # Run tests against local chain
-npm run chain:test
+pnpm run chain:test
 ```
 
 ## File Structure

@@ -38,7 +38,7 @@ NEXT_PUBLIC_DEV_FAUCET=1
 
 ## 3. Local MockETH (18 decimals) - Testing ETH-like behavior
 ```bash
-# chain/.env  
+# chain/.env
 LOCAL_RPC_URL=http://127.0.0.1:8547
 MOCK_ETH=0x42308B98Bf42F39b32F45755bcf8A31FD7EA1719
 LOCAL_MOCKETH_FACTORY=0xa95c778C25e2560f8232Af1121985082AD64EF8f
@@ -54,12 +54,12 @@ NEXT_PUBLIC_POOL_FACTORY_ADDRESS=0xa95c778C25e2560f8232Af1121985082AD64EF8f
 NEXT_PUBLIC_DEV_FAUCET=1
 ```
 
-## Key Differences:
-- **Mainnet**: Real USDC (6 decimals), amounts like 100 USDC
-- **MockUSDC**: Test USDC (6 decimals), amounts like 100 mUSDC  
-- **MockETH**: Test ETH (18 decimals), amounts like 0.1 mETH
+## Key Differences
+- Mainnet: Real USDC (6 decimals), amounts like 100 USDC
+- MockUSDC: Test USDC (6 decimals), amounts like 100 mUSDC
+- MockETH: Test ETH (18 decimals), amounts like 0.1 mETH
 
-## Pool Entry Fees:
-- **Mainnet**: 100 USDC ($100)
-- **MockUSDC**: 100 mUSDC (test $100)
-- **MockETH**: 0.1 mETH (test 0.1 ETH)
+## Pool Entry Fees
+- Mainnet: 100 USDC ($100)
+- MockUSDC: 100 mUSDC (test $100)
+- MockETH: 0.1 mETH (test 0.1 ETH)

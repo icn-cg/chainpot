@@ -6,13 +6,13 @@ A smooth, bulletproof system for switching between testnet and mainnet deploymen
 
 ```bash
 # Switch to testnet and deploy everything
-npm run deploy:testnet
+pnpm run deploy:testnet
 
 # Test the deployment
-npm run test:pools
+pnpm run test:pools
 
 # When ready, switch to mainnet
-npm run deploy:mainnet
+pnpm run deploy:mainnet
 ```
 
 ## 📋 Available Commands
@@ -20,25 +20,25 @@ npm run deploy:mainnet
 ### Network Management
 
 ```bash
-npm run network:testnet    # Switch to Polygon Amoy testnet
-npm run network:mainnet    # Switch to Polygon mainnet
-npm run network:status     # Show current network status
-npm run network:list       # List all available networks
+pnpm run network:testnet    # Switch to Polygon Amoy testnet
+pnpm run network:mainnet    # Switch to Polygon mainnet
+pnpm run network:status     # Show current network status
+pnpm run network:list       # List all available networks
 ```
 
 ### Deployment
 
 ```bash
-npm run deploy:testnet     # Complete testnet deployment
-npm run deploy:mainnet     # Production mainnet deployment
+pnpm run deploy:testnet     # Complete testnet deployment
+pnpm run deploy:mainnet     # Production mainnet deployment
 ```
 
 ### Verification & Testing
 
 ```bash
-npm run check:deployment   # Verify deployed contracts
-npm run check:balance      # Check deployer balance
-npm run test:pools         # Test pool creation and functionality
+pnpm run check:deployment   # Verify deployed contracts
+pnpm run check:balance      # Check deployer balance
+pnpm run test:pools         # Test pool creation and functionality
 ```
 
 ## 🏗️ What Gets Deployed
@@ -53,13 +53,13 @@ A compact, reliable guide for switching deployments between testnet and mainnet.
 
 ```bash
 # Switch to testnet and run a full test deployment
-npm run deploy:testnet
+pnpm run deploy:testnet
 
 # Run pool tests
-npm run test:pools
+pnpm run test:pools
 
 # When ready, deploy to mainnet
-npm run deploy:mainnet
+pnpm run deploy:mainnet
 ```
 
 ## 📋 Available commands
@@ -67,25 +67,25 @@ npm run deploy:mainnet
 ### Network management
 
 ```bash
-npm run network:testnet    # Switch to Polygon Amoy (testnet)
-npm run network:mainnet    # Switch to Polygon mainnet
-npm run network:status     # Show current network status
-npm run network:list       # List configured networks
+pnpm run network:testnet    # Switch to Polygon Amoy (testnet)
+pnpm run network:mainnet    # Switch to Polygon mainnet
+pnpm run network:status     # Show current network status
+pnpm run network:list       # List configured networks
 ```
 
 ### Deployment
 
 ```bash
-npm run deploy:testnet     # Complete testnet deployment
-npm run deploy:mainnet     # Production mainnet deployment (use with caution)
+pnpm run deploy:testnet     # Complete testnet deployment
+pnpm run deploy:mainnet     # Production mainnet deployment (use with caution)
 ```
 
 ### Verification & testing
 
 ```bash
-npm run check:deployment   # Verify deployed contracts
-npm run check:balance      # Check deployer / CI balance
-npm run test:pools         # Test pool creation and behaviour
+pnpm run check:deployment   # Verify deployed contracts
+pnpm run check:balance      # Check deployer / CI balance
+pnpm run test:pools         # Test pool creation and behaviour
 ```
 
 ## 🏗️ What gets deployed
@@ -130,11 +130,11 @@ CHAIN_ID=137
 
 ## 🧪 Testing flow
 
-1. Deploy to testnet: `npm run deploy:testnet`
-2. Verify deployment: `npm run check:deployment`
-3. Test pool creation: `npm run test:pools`
-4. Switch to mainnet: `npm run network:mainnet`
-5. Deploy to mainnet: `npm run deploy:mainnet`
+1. Deploy to testnet: `pnpm run deploy:testnet`
+2. Verify deployment: `pnpm run check:deployment`
+3. Test pool creation: `pnpm run test:pools`
+4. Switch to mainnet: `pnpm run network:mainnet`
+5. Deploy to mainnet: `pnpm run deploy:mainnet`
 
 ## 🛡️ Safety features
 
@@ -156,7 +156,7 @@ CHAIN_ID=137
 Run:
 
 ```bash
-npm run network:status
+pnpm run network:status
 ```
 
 Example output:
@@ -189,27 +189,27 @@ Common issues and quick commands:
 curl https://faucet.polygon.technology/
 
 # Check balance
-npm run check:balance
+pnpm run check:balance
 ```
 
 **Contract not found**
 
 ```bash
 # Re-run deployment
-npm run deploy:testnet
+pnpm run deploy:testnet
 
 # Verify deployment
-npm run check:deployment
+pnpm run check:deployment
 ```
 
 **Wrong network**
 
 ```bash
 # Check current network
-npm run network:status
+pnpm run network:status
 
 # Switch networks
-npm run network:testnet  # or mainnet
+pnpm run network:testnet  # or mainnet
 ```
 
 ## 📁 Relevant scripts
