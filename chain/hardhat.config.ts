@@ -7,6 +7,26 @@ dotenv.config();
 const config: HardhatUserConfig = {
   solidity: '0.8.24',
   networks: {
+    hardhat: {
+      forking: process.env.ALCHEMY_POLYGON_URL
+        ? {
+            url: process.env.ALCHEMY_POLYGON_URL,
+          }
+        : undefined,
+    },
+    // Flexible local network. Set LOCAL_RPC_URL in chain/.env, e.g., http://127.0.0.1:8547
+    local: {
+      url: process.env.LOCAL_RPC_URL || 'http://127.0.0.1:8545',
+      accounts: { mnemonic: 'test test test test test test test test test test test junk' },
+    },
+    localhost: {
+      url: 'http://127.0.0.1:8545',
+      accounts: { mnemonic: 'test test test test test test test test test test test junk' },
+    },
+    local8546: {
+      url: 'http://127.0.0.1:8546',
+      accounts: { mnemonic: 'test test test test test test test test test test test junk' },
+    },
     amoy: {
       // Prefer Alchemy Amoy endpoint when provided — Alchemy has better mempool visibility and propagation.
       url:
@@ -18,7 +38,7 @@ const config: HardhatUserConfig = {
       timeout: 300000, // 5 minutes
       gasPrice: 'auto',
     },
-    polygon: {
+  polygon: {
       url: process.env.ALCHEMY_POLYGON_URL || '',
       accounts: process.env.DEPLOYER_KEY ? [process.env.DEPLOYER_KEY] : [],
     },
