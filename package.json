@@ -1,14 +1,51 @@
 {
   "name": "chainpots",
   "version": "1.0.0",
-  "description": "",
+  "description": "Chainpot - Decentralized Pool Management Platform",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "pnpm -r --filter=./apps/web run build"
+    "build": "pnpm -r --filter=./apps/web run build",
+    
+    "_comment": "=== DevOps Development Commands ===",
+    "dev:mockusdc": "./scripts/dev-start.sh mockusdc",
+    "dev:mocketh": "./scripts/dev-start.sh mocketh",
+    "dev:status": "./scripts/dev-start.sh status",
+    
+    "_comment2": "=== Quick Environment Switching ===",
+    "switch:mockusdc": "cd chain && npx ts-node scripts/switchSetup.ts mockusdc",
+    "switch:mocketh": "cd chain && npx ts-node scripts/switchSetup.ts mocketh", 
+    "switch:mainnet": "cd chain && npx ts-node scripts/switchSetup.ts mainnet",
+    "switch:list": "cd chain && npx ts-node scripts/switchSetup.ts list",
+    
+    "_comment3": "=== Blockchain Management ===", 
+    "chain:start": "cd chain && npx hardhat node --hostname 127.0.0.1 --port 8547",
+    "chain:deploy:mockusdc": "cd chain && npx hardhat run scripts/deployLocalAll.ts --network local",
+    "chain:deploy:mocketh": "cd chain && npx hardhat run scripts/deployLocalETH.ts --network local",
+    "chain:test": "cd chain && npx hardhat test",
+    "chain:compile": "cd chain && npx hardhat compile",
+    
+    "_comment4": "=== Web App Commands ===",
+    "web:dev": "pnpm --filter=./apps/web dev",
+    "web:build": "pnpm --filter=./apps/web build",
+    "web:start": "pnpm --filter=./apps/web start",
+    
+    "_comment5": "=== Production Deployment ===",
+    "deploy:vercel": "vercel --prod",
+    "deploy:preview": "vercel",
+    "env:prod-check": "cd apps/web && echo 'Vercel env vars:' && vercel env ls",
+    
+    "_comment6": "=== Utility Commands ===",
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "install:all": "pnpm install",
+    "typecheck": "pnpm -r run typecheck",
+    "format": "prettier --write ."
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["blockchain", "defi", "pools", "ethereum", "polygon"],
+  "author": "Chainpot Team",
   "license": "ISC",
-  "packageManager": "pnpm@10.14.0"
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  }
 }
