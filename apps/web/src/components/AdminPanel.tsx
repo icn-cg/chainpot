@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, ethers } from 'ethers';
 import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react';
 import { useWallet } from './WalletProvider';
 import {
@@ -12,6 +12,13 @@ import {
   toUnits6,
 } from '../lib/web3';
 import { toNumberSafe, secondsToMilliseconds } from 'src/lib/numeric';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type Recipient = { address: string; bps: number };
 
@@ -170,18 +177,72 @@ export default function AdminPanel({ address }: { address: string }) {
     alert('Cancelled. Participants can claimRefund().');
   }
 
-  // Dev faucet: send MockUSDC from owner to any address
+    // Pool organizer faucet: mint MockUSDC directly to any address
   async function faucet() {
-    if (!provider) return alert('Connect');
+    if (!provider) return alert('Connect wallet first');
+    if (!isOwner) return alert('Only pool organizer can use faucet');
+    
+    // Validate amount
+    const amount = parseFloat(fAmt);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    if (amount > 1000) {
+      alert('Maximum faucet amount is 1000 mUSDC per transaction');
+      return;
+    }
+    
+    // Validate recipient address
+    if (!fTo || !ethers.isAddress(fTo)) {
+      alert('Please enter a valid recipient address');
+      return;
+    }
+    
     try {
       const escR = poolEscrowReadonly(address);
       const tokAddr = await escR.token();
-      const tokW = await erc20Write(provider, tokAddr);
-      const tx = await tokW.transfer(fTo, toUnits6(fAmt));
-      await tx.wait();
-      alert(`Sent ${fAmt} MockUSDC to ${fTo}`);
+      
+      // For local networks, pool organizer can mint tokens
+      const network = await provider.getNetwork();
+      if (network.chainId === 31337n) {
+        const signer = await provider.getSigner();
+        const tokW = new ethers.Contract(tokAddr, [
+          'function faucet(address to, uint256 amount) external',
+          'function mint(address to, uint256 amount) external',
+          'function owner() external view returns (address)',
+          'function balanceOf(address account) external view returns (uint256)'
+        ], signer);
+        
+        try {
+          // Try public faucet first (works for anyone, limited to 1000 mUSDC)
+          const tx = await tokW.faucet(fTo, toUnits6(fAmt));
+          await tx.wait();
+          alert(`✅ Successfully minted ${fAmt} mUSDC to ${fTo}`);
+          setFAmt(''); // Clear amount after successful mint
+        } catch (faucetError) {
+          // If public faucet fails, try admin mint if organizer is contract owner
+          try {
+            const contractOwner = await tokW.owner();
+            const currentAccount = await signer.getAddress();
+            
+            if (currentAccount.toLowerCase() === contractOwner.toLowerCase()) {
+              const tx = await tokW.mint(fTo, toUnits6(fAmt));
+              await tx.wait();
+              alert(`✅ Successfully minted ${fAmt} mUSDC to ${fTo} (admin mint)`);
+              setFAmt(''); // Clear amount after successful mint
+            } else {
+              alert(`❌ Faucet limit is 1000 mUSDC per transaction. Please use a smaller amount.`);
+            }
+          } catch (mintError: any) {
+            alert(`❌ Faucet failed: ${mintError?.message || 'Unknown error'}`);
+          }
+        }
+      } else {
+        alert('Faucet only works on local network');
+      }
     } catch (e: any) {
-      alert(e?.reason || e?.data?.message || e?.message || 'Faucet failed');
+      alert(`❌ ${e?.reason || e?.data?.message || e?.message || 'Faucet failed'}`);
     }
   }
 
@@ -198,126 +259,230 @@ export default function AdminPanel({ address }: { address: string }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="border border-gray-200 p-3 rounded-xl space-y-1">
-        <div>
-          <b>Owner</b>: {owner}
-        </div>
-        <div>Params frozen: {String(frozen)} (freeze occurs on first join)</div>
-        <div className="flex gap-2 items-center">
-          <span>Ends: {new Date(secondsToMilliseconds(endTs)).toLocaleString()}</span>
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full border ${
-              eligible
-                ? 'border-green-300 bg-green-50 text-green-700'
-                : 'border-gray-300 bg-gray-50 text-gray-700'
-            }`}
-          >
-            {eligible ? 'payout eligible' : `ends in ${fmtCountdown(secondsLeft)}`}
-          </span>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* Pool Status Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl">Pool Administration</CardTitle>
+              <CardDescription>Manage pool settings and participants</CardDescription>
+            </div>
+            <Badge variant={eligible ? "default" : "secondary"} className="text-sm">
+              {eligible ? 'Payout Eligible' : `Ends in ${fmtCountdown(secondsLeft)}`}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <Label className="text-muted-foreground">Organizer</Label>
+              <p className="font-mono text-xs">{owner?.slice(0, 6)}...{owner?.slice(-4)}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Entry Fee</Label>
+              <p className="font-semibold">{fee} USDC</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">End Time</Label>
+              <p className="font-semibold">{new Date(secondsToMilliseconds(endTs)).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Status</Label>
+              <p className="font-semibold">{frozen ? 'Active' : 'Draft'}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {!isOwner ? (
-        <div className="p-3 rounded border border-amber-200 bg-amber-50">
-          Connect as owner to manage.
-        </div>
+        <Alert>
+          <AlertDescription>
+            Connect as pool organizer to access management features.
+          </AlertDescription>
+        </Alert>
       ) : (
-        <>
-          <div className="border border-gray-200 p-3 rounded-xl">
-            <h3 className="font-semibold mb-2">Edit (only before first join)</h3>
-            <label className="flex gap-2 items-center my-2">
-              Entry Fee (USDC):
-              <input
-                className="flex-1 border border-gray-300 rounded px-2 py-1"
-                value={fee}
-                onChange={(e) => setFee(e.target.value)}
-              />
-            </label>
-            <button className="px-3 py-2 rounded border border-gray-300 mr-2" onClick={updateFee}>
-              Update Fee
-            </button>
-            <label className="flex gap-2 items-center my-2">
-              End time (local):
-              <input
-                className="flex-1 border border-gray-300 rounded px-2 py-1"
-                type="datetime-local"
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-              />
-            </label>
-            <button className="px-3 py-2 rounded border border-gray-300" onClick={updateEnd}>
-              Update End
-            </button>
-          </div>
+        <Tabs defaultValue="settings" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="settings">Pool Settings</TabsTrigger>
+            <TabsTrigger value="recipients">Recipients</TabsTrigger>
+            <TabsTrigger value="faucet">Dev Faucet</TabsTrigger>
+          </TabsList>
 
-          <div className="border border-gray-200 p-3 rounded-xl">
-            <h3 className="font-semibold mb-2">Recipients (bps sum to 10000)</h3>
-            {recipients.map((r, i) => (
-              <div key={i} className="flex gap-2 items-center my-2">
-                <input
-                  className="flex-1 border border-gray-300 rounded px-2 py-1"
-                  placeholder="0xRecipient..."
-                  value={r.address}
-                  onChange={(e) => setR(i, 'address', e.target.value)}
-                />
-                <input
-                  className="w-28 border border-gray-300 rounded px-2 py-1"
-                  type="number"
-                  placeholder="bps"
-                  value={r.bps}
-                  onChange={(e) => setR(i, 'bps', e.target.value)}
-                />
-                <button className="px-2 py-1 rounded border border-gray-300" onClick={() => rmR(i)}>
-                  ✕
-                </button>
-              </div>
-            ))}
-            <div className="flex gap-2">
-              <button className="px-3 py-2 rounded border border-gray-300" onClick={addRecipient}>
-                + Add Recipient
-              </button>
-              <button
-                className="px-3 py-2 rounded border border-gray-300"
-                onClick={setRecipientsOnChain}
-              >
-                Set Recipients
-              </button>
-              <button className="px-3 py-2 rounded border border-gray-300" onClick={payout}>
-                Payout
-              </button>
-              <button className="px-3 py-2 rounded border border-gray-300" onClick={cancel}>
-                Cancel Pool
-              </button>
-            </div>
-          </div>
+          {/* Pool Settings Tab */}
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pool Configuration</CardTitle>
+                <CardDescription>
+                  Edit pool settings (only before first participant joins)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fee">Entry Fee (USDC)</Label>
+                    <Input
+                      id="fee"
+                      type="number"
+                      placeholder="100"
+                      value={fee}
+                      onChange={(e) => setFee(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endTime">End Time</Label>
+                    <Input
+                      id="endTime"
+                      type="datetime-local"
+                      value={end}
+                      onChange={(e) => setEnd(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={updateFee} variant="outline">
+                    Update Fee
+                  </Button>
+                  <Button onClick={updateEnd} variant="outline">
+                    Update End Time
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
+          {/* Recipients Tab */}
+          <TabsContent value="recipients" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Payout Recipients</CardTitle>
+                <CardDescription>
+                  Configure how pool funds are distributed (basis points must sum to 10,000)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {recipients.map((r, i) => (
+                  <div key={i} className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label>Recipient Address</Label>
+                      <Input
+                        placeholder="0xRecipient..."
+                        value={r.address}
+                        onChange={(e) => setR(i, 'address', e.target.value)}
+                      />
+                    </div>
+                    <div className="w-32 space-y-2">
+                      <Label>Basis Points</Label>
+                      <Input
+                        type="number"
+                        placeholder="5000"
+                        value={r.bps}
+                        onChange={(e) => setR(i, 'bps', e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => rmR(i)}
+                      className="text-destructive"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Button onClick={addRecipient} variant="outline">
+                    Add Recipient
+                  </Button>
+                  <Button onClick={setRecipientsOnChain}>
+                    Save Recipients
+                  </Button>
+                  <Button onClick={payout} variant="default">
+                    Execute Payout
+                  </Button>
+                  <Button onClick={cancel} variant="destructive">
+                    Cancel Pool
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Dev Faucet Tab */}
           {DEV_FAUCET !== '0' && (
-            <div className="border border-gray-200 p-3 rounded-xl">
-              <h3 className="font-semibold mb-2">Dev Faucet (owner → address)</h3>
-              <div className="flex gap-2 items-center">
-                <input
-                  className="flex-1 border border-gray-300 rounded px-2 py-1"
-                  placeholder="0xRecipient..."
-                  value={fTo}
-                  onChange={(e) => setFTo(e.target.value)}
-                />
-                <input
-                  className="w-40 border border-gray-300 rounded px-2 py-1"
-                  placeholder="Amount (USDC)"
-                  value={fAmt}
-                  onChange={(e) => setFAmt(e.target.value)}
-                />
-                <button className="px-3 py-2 rounded border border-gray-300" onClick={faucet}>
-                  Send
-                </button>
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Sends the pot’s token (MockUSDC) from the connected owner wallet.
-              </div>
-            </div>
+            <TabsContent value="faucet" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Development Faucet</CardTitle>
+                  <CardDescription>
+                    Mint test tokens for development and testing (Local network only)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Alert>
+                    <AlertDescription>
+                      <strong>Faucet Limits:</strong> Maximum 1000 mUSDC per transaction. 
+                      Use smaller amounts for multiple recipients.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2 space-y-2">
+                      <Label htmlFor="faucetRecipient">Recipient Address</Label>
+                      <Input
+                        id="faucetRecipient"
+                        placeholder="0xRecipient... or use your address"
+                        value={fTo}
+                        onChange={(e) => setFTo(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="faucetAmount">Amount (mUSDC)</Label>
+                      <Input
+                        id="faucetAmount"
+                        type="number"
+                        placeholder="100"
+                        min="1"
+                        max="1000"
+                        value={fAmt}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (val > 1000) {
+                            setFAmt('1000');
+                          } else {
+                            setFAmt(e.target.value);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setFTo(me || '')}
+                      variant="outline"
+                      disabled={!me}
+                    >
+                      Use My Address
+                    </Button>
+                    <Button
+                      onClick={faucet}
+                      disabled={!fTo || !fAmt || parseFloat(fAmt) <= 0 || parseFloat(fAmt) > 1000}
+                    >
+                      Mint Tokens
+                    </Button>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    Pool organizers can mint test mUSDC tokens for development. 
+                    These tokens work identically to mainnet USDC but only on local networks.
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           )}
-        </>
+        </Tabs>
       )}
     </div>
   );

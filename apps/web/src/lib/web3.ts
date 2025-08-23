@@ -18,6 +18,26 @@ export function rpc() {
   return new JsonRpcProvider(RPC_URL, CHAIN_ID);
 }
 const chainHex = () => '0x' + CHAIN_ID.toString(16);
+const chainMeta = () => {
+  if (CHAIN_ID === 31337)
+    return {
+      name: 'Hardhat Local',
+      explorer: undefined as string | undefined,
+      currency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+    };
+  if (CHAIN_ID === 137)
+    return {
+      name: 'Polygon Mainnet',
+      explorer: 'https://polygonscan.com',
+      currency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+    };
+  // Default to Polygon Amoy (testnet)
+  return {
+    name: 'Polygon Amoy',
+    explorer: 'https://www.oklink.com/amoy',
+    currency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+  };
+};
 
 /** ---------- Injected (MetaMask / Coinbase Wallet) ---------- */
 export async function connectInjected(): Promise<BrowserProvider> {
@@ -33,15 +53,16 @@ export async function connectInjected(): Promise<BrowserProvider> {
       await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: need }] });
     } catch (err: any) {
       if (err?.code === 4902) {
+        const meta = chainMeta();
         await ethereum.request({
           method: 'wallet_addEthereumChain',
           params: [
             {
               chainId: need,
-              chainName: 'Polygon Amoy',
-              nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+              chainName: meta.name,
+              nativeCurrency: meta.currency,
               rpcUrls: [RPC_URL],
-              blockExplorerUrls: ['https://www.oklink.com/amoy'],
+              blockExplorerUrls: meta.explorer ? [meta.explorer] : [],
             },
           ],
         });
@@ -50,7 +71,7 @@ export async function connectInjected(): Promise<BrowserProvider> {
       }
     }
     current = await ethereum.request({ method: 'eth_chainId' });
-    if (current !== need) throw new Error('Please switch your wallet to Polygon Amoy (80002).');
+    if (current !== need) throw new Error(`Please switch your wallet to chain ${CHAIN_ID}.`);
   }
 
   const provider = new BrowserProvider(ethereum);
@@ -68,13 +89,14 @@ export async function ensureChain(provider: BrowserProvider) {
     try {
       await (provider as any).send('wallet_switchEthereumChain', [{ chainId: hexId }]);
     } catch {
+      const meta = chainMeta();
       await (provider as any).send('wallet_addEthereumChain', [
         {
           chainId: hexId,
-          chainName: 'Polygon Amoy',
-          nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+          chainName: meta.name,
+          nativeCurrency: meta.currency,
           rpcUrls: [RPC_URL],
-          blockExplorerUrls: ['https://www.oklink.com/amoy'],
+          blockExplorerUrls: meta.explorer ? [meta.explorer] : [],
         },
       ]);
     }
