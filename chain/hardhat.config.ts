@@ -8,9 +8,14 @@ const config: HardhatUserConfig = {
   solidity: '0.8.24',
   networks: {
     amoy: {
-      url: process.env.ALCHEMY_AMOY_URL || 'https://rpc-amoy.polygon.technology/',
+      // Prefer Alchemy Amoy endpoint when provided — Alchemy has better mempool visibility and propagation.
+      url:
+        process.env.ALCHEMY_AMOY_URL ||
+        process.env.RPC_URL ||
+        'https://rpc-amoy.polygon.technology/',
       accounts: process.env.DEPLOYER_KEY ? [process.env.DEPLOYER_KEY] : [],
-      timeout: 60000, // 60 seconds
+      // Increase timeouts for slow testnets / indexer delays
+      timeout: 300000, // 5 minutes
       gasPrice: 'auto',
     },
     polygon: {

@@ -96,7 +96,7 @@ export default function AdminPanel({ address }: { address: string }) {
       const e = await escR.endTime();
       setEndTs(e);
       setEnd(new Date(secondsToMilliseconds(e)).toISOString().slice(0, 16));
-      
+
       // New pools have different fee structure - check if it's fixed or flexible
       try {
         const entryUnit = await escR.entryUnit();
@@ -277,7 +277,10 @@ export default function AdminPanel({ address }: { address: string }) {
               <button className="px-3 py-2 rounded border border-gray-300" onClick={addRecipient}>
                 + Add Recipient
               </button>
-              <button className="px-3 py-2 rounded border border-gray-300" onClick={setRecipientsOnChain}>
+              <button
+                className="px-3 py-2 rounded border border-gray-300"
+                onClick={setRecipientsOnChain}
+              >
                 Set Recipients
               </button>
               <button className="px-3 py-2 rounded border border-gray-300" onClick={payout}>
